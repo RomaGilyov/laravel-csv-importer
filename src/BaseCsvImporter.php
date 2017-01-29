@@ -4,11 +4,13 @@ namespace App\CsvImporter;
 
 use App\CsvImporter\Exceptions\CsvImporterException;
 use \Carbon\Carbon;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use League\Csv\Writer;
 use League\Csv\Reader;
 use NinjaMutex\Lock\PredisRedisLock;
 use NinjaMutex\Mutex;
+use RGilyov\CsvImporter\BaseHeaderFilter;
 use RGilyov\CsvImporter\CsvImporterConfigurationTrait;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use \Predis\Client as PredisClient;
@@ -27,11 +29,21 @@ abstract class BaseCsvImporter
     const IMPORTANT = 'important';
 
     /**
+     * @var array
+     */
+    protected static $fieldsFilters = [];
+
+    /**
      * If a field has required value and the field won't be in the csv headers, an error will be shown
      *
      * @var string
      */
     const REQUIRED = 'required';
+
+    /**
+     * @var array
+     */
+    protected static $headersFilters = [];
 
     /**
      * If a field has cast key the name of function in the value will be executed on the field
@@ -923,24 +935,70 @@ abstract class BaseCsvImporter
             }
         }
 
-        $this->executeRequiredFilters();
+        $this->executeHeadersFilters();
     }
 
     /**
      * @return void
      */
-    protected function executeRequiredFilters()
+    protected function executeHeadersFilters()
     {
-        if (isset($this->config['required_filters'])) {
-            foreach ($this->config['required_filters'] as $filter) {
-                if (method_exists($this, $filter)) {
-                    $result = $this->{$filter}($this->headers);
-                    if ($result->error) {
-                        $this->setError('Required fields errors:', $result->message);
-                    }
+        foreach ($this->getHeadersFilters() as $filter) {
+            if ($filter instanceof BaseHeaderFilter) {
+                $result = $filter->executeFilter($this->headers);
+                if ($result->error) {
+                    $this->setError('Headers error:', $result->message);
                 }
             }
         }
+    }
+
+    /**
+     * @parameters BaseHeaderFilter
+     * @return array
+     */
+    public static function addHeaderFilters()
+    {
+        foreach (func_get_args() as $argument) {
+            if (is_array($argument)) {
+                foreach ($argument as $arg) {
+                    static::addHeaderFilter($arg);
+                }
+            } else {
+                static::addHeaderFilter($argument);
+            }
+        }
+
+        return static::$headersFilters[static::class];
+    }
+
+    /**
+     * @param $filter
+     * @return bool|BaseHeaderFilter
+     */
+    public static function addHeaderFilter($filter)
+    {
+        if ($filter instanceof BaseHeaderFilter) {
+            return static::$headersFilters[static::class][get_class($filter)] = $filter;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array
+     */
+    public function getHeadersFilters()
+    {
+        return Arr::get(static::$headersFilters, static::class, []);
+    }
+
+    /**
+     * @return array
+     */
+    public function flushHeadersFilters()
+    {
+        return Arr::set(static::$headersFilters, static::class, []);
     }
 
     /**
@@ -985,9 +1043,12 @@ abstract class BaseCsvImporter
     protected function getFieldsWithRules($rule)
     {
         $fieldsWithRules = [];
-        foreach ($this->config['mappings'] as $field => $rules) {
-            if (array_search($rule, $rules) !== false) {
-                $fieldsWithRules[] = $field;
+
+        if (isset($this->config['mappings']) && is_array($this->config['mappings'])) {
+            foreach ($this->config['mappings'] as $field => $rules) {
+                if (array_search($rule, $rules) !== false) {
+                    $fieldsWithRules[] = $field;
+                }
             }
         }
 
