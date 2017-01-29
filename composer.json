@@ -1,0 +1,22 @@
+{
+    "name": "rgilyov/laravel-csv-importer",
+    "description": "Easy and reliable way to import your csv files with laravel",
+    "type": "library",
+    "require-dev": {
+        "phpunit/phpunit": "^5.7"
+    },
+    "require": {
+        "php": ">=5.5.9",
+        "arvenil/ninja-mutex": "*",
+        "league/csv": "^8.0"
+
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Roman Gilyov",
+            "email": "rgilyov@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev"
+}
