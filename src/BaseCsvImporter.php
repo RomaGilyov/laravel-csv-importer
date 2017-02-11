@@ -10,9 +10,13 @@ use League\Csv\Writer;
 use League\Csv\Reader;
 use NinjaMutex\Lock\PredisRedisLock;
 use NinjaMutex\Mutex;
-use RGilyov\CsvImporter\BaseHeaderFilter;
+use RGilyov\CsvImporter\BaseCastFilter;
+use RGilyov\CsvImporter\BaseRequiredFilter;
+use RGilyov\CsvImporter\BaseImportantFilter;
+use RGilyov\CsvImporter\ClosureCastFilter;
+use RGilyov\CsvImporter\ClosureRequiredFilter;
+use RGilyov\CsvImporter\ClosureImportantFilter;
 use RGilyov\CsvImporter\CsvImporterConfigurationTrait;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use \Predis\Client as PredisClient;
 
 abstract class BaseCsvImporter
@@ -31,7 +35,7 @@ abstract class BaseCsvImporter
     /**
      * @var array
      */
-    protected static $fieldsFilters = [];
+    protected static $importantFilters = [];
 
     /**
      * If a field has required value and the field won't be in the csv headers, an error will be shown
@@ -43,7 +47,7 @@ abstract class BaseCsvImporter
     /**
      * @var array
      */
-    protected static $headersFilters = [];
+    protected static $requiredFilters = [];
 
     /**
      * If a field has cast key the name of function in the value will be executed on the field
@@ -51,6 +55,11 @@ abstract class BaseCsvImporter
      * @var string
      */
     const CAST = 'cast';
+
+    /**
+     * @var array
+     */
+    protected static $castFilters = [];
 
     /**
      * Csv importer base configurations, from /config/csv-importer.php
@@ -101,7 +110,7 @@ abstract class BaseCsvImporter
     /**
      * @var int
      */
-    protected $mutexLockTime = 300;
+    protected $mutexLockTime;
 
     /**
      * @var \Cache
@@ -294,7 +303,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * Will be executed after importing, useful to check mappings
+     * Will be executed after importing
      *
      * @return void
      */
@@ -383,7 +392,7 @@ abstract class BaseCsvImporter
      * @param array $data
      * @return array
      */
-    public function toCsvData(array $data)
+    public function toCsvFormat(array $data)
     {
         $csvData = [];
         foreach ($this->headers as $value) {
@@ -486,7 +495,7 @@ abstract class BaseCsvImporter
         $distinct = collect([]);
 
         $this->each(function ($item) use ($distinct, $property) {
-            $value = ($item[$property]) ? $item[$property] : false;
+            $value = (isset($item[$property]) && $item[$property]) ? $item[$property] : false;
             if (false !== $value && !$distinct->offsetExists($value)) {
                 $distinct->put($value, true);
             }
@@ -519,16 +528,6 @@ abstract class BaseCsvImporter
         return ( bool )$this->csvFile;
     }
 
-    /**
-     * Check if import process is finished
-     *
-     * @return bool
-     */
-    public function isFinished()
-    {
-        return ( bool )$this->cache->get($this->progressFinishedKey);
-    }
-
     /*
     |--------------------------------------------------------------------------
     | Api methods
@@ -546,6 +545,16 @@ abstract class BaseCsvImporter
     }
 
     /**
+     * Check if import process is finished
+     *
+     * @return bool
+     */
+    public function isFinished()
+    {
+        return ( bool )$this->cache->get($this->progressFinishedKey);
+    }
+
+    /**
      * Finish import, unlock mutex and get final information
      *
      * @return array
@@ -557,7 +566,7 @@ abstract class BaseCsvImporter
         }
 
         /*
-         * We need to get data before mutex unlock and session cleaning
+         * We need to get data before mutex unlocked and session cleared
          */
         $data = $this->finishProgressDetails();
 
@@ -601,7 +610,7 @@ abstract class BaseCsvImporter
             return false;
         }
 
-        if (!$this->isLocked() || !$this->getProgressDetails()->finished) {
+        if (!$this->isLocked() || !$this->isFinished()) {
             $this->lock();
 
             $this->initialize();
@@ -669,12 +678,10 @@ abstract class BaseCsvImporter
      */
     protected function process()
     {
-        \DB::transaction(function () {
-            $this->each(function ($item) {
-                $this->isCanceled();
-                ($this->validateItem($item)) ? $this->handle($item) : $this->invalid($item);
-                $this->incrementProgress();
-            });
+        $this->each(function ($item) {
+            $this->isCanceled();
+            ($this->validateItem($item)) ? $this->handle($item) : $this->invalid($item);
+            $this->incrementProgress();
         });
     }
 
@@ -725,23 +732,23 @@ abstract class BaseCsvImporter
     {
         if (isset($this->config['csv_paths'])) {
             $paths = [];
-            foreach ($this->config['csv_paths'] as $key => $csvPath) {
-                if (\Storage::exists($csvPath)) {
+            foreach ($this->config['csv_paths'] as $key => $path) {
+                if (\Storage::exists($path)) {
                     $now     = Carbon::now();
-                    $time    = "_" . $now->hour . "_" . $now->minute . "_" . $now->second . "_.";
-                    $csvPath = str_replace(".", $time, $csvPath);
+                    $time    = "_" . $now->hour . "_" . $now->minute . "_" . $now->second . "_";
+                    $path = (substr_count($path, '.') === 1) ? strtr($path, ".", $time.'.') : ($path . $time);
                 }
 
-                \Storage::put($csvPath, '');
+                \Storage::put($path, '');
 
                 $this->csvWriters->put(
                     $key,
-                    Writer::createFromPath($csvPath)
+                    Writer::createFromPath($path)
                         ->setDelimiter($this->delimiter)
                         ->insertOne(implode($this->delimiter, $this->headers))
                 );
 
-                $paths[$key] = $csvPath;
+                $paths[$key] = $path;
             }
 
             $this->cache->forever($this->importPathsKey, $paths);
@@ -767,14 +774,14 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * @throws HttpException
+     * @throws CsvImporterException
      */
     protected function isCanceled()
     {
         if ($this->cache->get($this->progressCancelKey)) {
             $this->onCancel();
             $this->unlock();
-            throw new HttpException(200, 'Importing has been canceled');
+            throw new CsvImporterException(['message' => 'Importing had canceled'], 200);
         }
     }
 
@@ -785,17 +792,35 @@ abstract class BaseCsvImporter
      */
     protected function castFields(array $item)
     {
-        foreach ($this->config['mappings'] as $field => $rules) {
-            if (isset($rules[self::CAST]) && isset($item[$field])) {
-                if (method_exists($this, $rules[self::CAST])) {
-                    $item[$field] = $this->{$rules[self::CAST]}($item[$field]);
-                } else {
-                    $item[$field] = $this->castField($item[$field], $rules[self::CAST]);
+        if (isset($this->config['mappings']) && is_array($this->config['mappings'])) {
+            foreach ($this->config['mappings'] as $field => $rules) {
+                if (isset($rules[self::CAST]) && isset($item[$field])) {
+                    if (is_array($rules[self::CAST])) {
+                        foreach ($rules[self::CAST] as $cast) {
+                            $item[$field] = $this->performCastOnValue($item[$field], $cast);
+                        }
+                    } elseif (is_string($rules[self::CAST])) {
+                        $item[$field] = $this->performCastOnValue($item[$field], $rules[self::CAST]);
+                    }
                 }
             }
         }
 
         return $item;
+    }
+
+    /**
+     * @param $value
+     * @param $cast
+     * @return mixed
+     */
+    protected function performCastOnValue($value, $cast)
+    {
+        if ($filter = static::getCastFilter($cast)) {
+            return $filter->filter($value);
+        }
+
+        return $this->castField($value, $cast);
     }
 
     /**
@@ -856,7 +881,7 @@ abstract class BaseCsvImporter
         try {
             return Carbon::createFromFormat($this->csvDateFormat, $date)->toDateString();
         } catch (\Exception $e) {
-            return '0000-00-00';
+            return '0001-01-01';
         }
     }
 
@@ -868,7 +893,7 @@ abstract class BaseCsvImporter
     {
         $date = trim(preg_replace('/(\/|\\\|\||\.|\,)/', '-', $date));
 
-        $zeroDate = '0000-00-00';
+        $zeroDate = '0001-01-01';
 
         if (!$date || ($date == $zeroDate)) {
             return $zeroDate;
@@ -914,13 +939,14 @@ abstract class BaseCsvImporter
      */
     protected function executeImportantFilters(array $item)
     {
-        if (isset($this->config['important_filters'])) {
-            foreach ($this->config['important_filters'] as $filter) {
-                if (method_exists($this, $filter)) {
-                    return $this->{$filter}($item);
+        foreach (static::getImportantFilters() as $filter) {
+            if ($filter instanceof BaseImportantFilter) {
+                if (!$filter->filter($item)) {
+                    return false;
                 }
             }
         }
+
         return true;
     }
 
@@ -943,8 +969,8 @@ abstract class BaseCsvImporter
      */
     protected function executeHeadersFilters()
     {
-        foreach ($this->getHeadersFilters() as $filter) {
-            if ($filter instanceof BaseHeaderFilter) {
+        foreach (static::getRequiredFilters() as $filter) {
+            if ($filter instanceof BaseRequiredFilter) {
                 $result = $filter->executeFilter($this->headers);
                 if ($result->error) {
                     $this->setError('Headers error:', $result->message);
@@ -957,48 +983,273 @@ abstract class BaseCsvImporter
      * @parameters BaseHeaderFilter
      * @return array
      */
-    public static function addHeaderFilters()
+    public static function addRequiredFilters()
     {
-        foreach (func_get_args() as $argument) {
-            if (is_array($argument)) {
-                foreach ($argument as $arg) {
-                    static::addHeaderFilter($arg);
-                }
-            } else {
-                static::addHeaderFilter($argument);
-            }
-        }
+        return static::addFilters(self::REQUIRED, func_get_args());
+    }
 
-        return static::$headersFilters[static::class];
+    /**
+     * @parameters BaseHeaderFilter
+     * @return array
+     */
+    public static function addImportantFilters()
+    {
+        return static::addFilters(self::IMPORTANT, func_get_args());
+    }
+
+    /**
+     * @parameters BaseHeaderFilter
+     * @return array
+     */
+    public static function addCastFilters()
+    {
+        return static::addFilters(self::CAST, func_get_args());
     }
 
     /**
      * @param $filter
-     * @return bool|BaseHeaderFilter
+     * @param null $name
+     * @return bool|ClosureCastFilter|ClosureImportantFilter|ClosureRequiredFilter
      */
-    public static function addHeaderFilter($filter)
+    public static function addRequiredFilter($filter, $name = null)
     {
-        if ($filter instanceof BaseHeaderFilter) {
-            return static::$headersFilters[static::class][get_class($filter)] = $filter;
+        return static::addFilter(self::REQUIRED, $filter, $name);
+    }
+
+    /**
+     * @param $filter
+     * @param null $name
+     * @return bool|ClosureCastFilter|ClosureImportantFilter|ClosureRequiredFilter
+     */
+    public static function addImportantFilter($filter, $name = null)
+    {
+        return static::addFilter(self::IMPORTANT, $filter, $name);
+    }
+
+    /**
+     * @param $filter
+     * @param null $name
+     * @return bool|ClosureCastFilter|ClosureImportantFilter|ClosureRequiredFilter
+     */
+    public static function addCastFilter($filter, $name = null)
+    {
+        return static::addFilter(self::CAST, $filter, $name);
+    }
+
+    /**
+     * @return array
+     */
+    public static function getRequiredFilters()
+    {
+        return Arr::get(static::$requiredFilters, static::class, []);
+    }
+
+    /**
+     * @return array
+     */
+    public static function getImportantFilters()
+    {
+        return Arr::get(static::$importantFilters, static::class, []);
+    }
+
+    /**
+     * @return array
+     */
+    public static function getCastFilters()
+    {
+        return Arr::get(static::$importantFilters, static::class, []);
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public static function getRequiredFilter($name)
+    {
+        return (static::requiredFilterExists($name)) ? static::$requiredFilters[static::class][$name] : null;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public static function getImportantFilter($name)
+    {
+        return (static::importantFilterExists($name)) ? static::$importantFilters[static::class][$name] : null;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public static function getCastFilter($name)
+    {
+        return (static::castFilterExists($name)) ? static::$castFilters[static::class][$name] : null;
+    }
+
+    /**
+     * @return array
+     */
+    public static function flushRequiredFilters()
+    {
+        return Arr::set(static::$requiredFilters, static::class, []);
+    }
+
+    /**
+     * @return array
+     */
+    public static function flushImportantFilters()
+    {
+        return Arr::set(static::$importantFilters, static::class, []);
+    }
+
+    /**
+     * @return array
+     */
+    public static function flushCastFilters()
+    {
+        return Arr::set(static::$importantFilters, static::class, []);
+    }
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    public static function importantFilterExists($name)
+    {
+        return isset(static::$importantFilters[static::class][$name]);
+    }
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    public static function requiredFilterExists($name)
+    {
+        return isset(static::$requiredFilters[static::class][$name]);
+    }
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    public static function castFilterExists($name)
+    {
+        return isset(static::$castFilters[static::class][$name]);
+    }
+
+    /**
+     * @param $type
+     * @param array $filters
+     * @return mixed
+     */
+    private static function addFilters($type, array $filters)
+    {
+        foreach ($filters as $filter) {
+            if (is_array($filter)) {
+                call_user_func_array([static::class, "add" . ucfirst($type) . "Filters"], $filter);
+            } else {
+                static::addFilter($type, $filter);
+            }
+        }
+
+        return static::${$type . 'Filters'}[static::class];
+    }
+
+    /**
+     * @param $type
+     * @param $filter
+     * @param null $name
+     * @return bool|ClosureCastFilter|ClosureImportantFilter|ClosureRequiredFilter
+     */
+    private static function addFilter($type, $filter, $name = null)
+    {
+        $resolved = false;
+
+        switch ($type) {
+            case self::REQUIRED:
+                $resolved = (static::isClosure($filter)) ? new ClosureRequiredFilter($filter) : static::checkRequiredFilter($filter);
+                break;
+            case self::IMPORTANT:
+                $resolved = (static::isClosure($filter)) ? new ClosureImportantFilter($filter) : static::checkImportantFilter($filter);
+                break;
+            case self::CAST:
+                $resolved = (static::isClosure($filter)) ? new ClosureCastFilter($filter) : static::checkCastFilter($filter);
+                break;
+        }
+
+        if ($resolved) {
+            return static::${$type . 'Filters'}[static::class][static::filterName($type, $name, $filter)] = $resolved;
         }
 
         return false;
     }
 
     /**
-     * @return array
+     * @param $type
+     * @param $filter
+     * @param $name
+     * @return string
      */
-    public function getHeadersFilters()
+    protected static function filterName($type, $filter, $name)
     {
-        return Arr::get(static::$headersFilters, static::class, []);
+        $name = (is_string($name)) ? $name : (new \ReflectionClass($filter))->getShortName();
+
+        return static::checkFilterName($type, $name);
     }
 
     /**
-     * @return array
+     * @param string $type
+     * @param null $name
+     * @param null $counter
+     * @return string
      */
-    public function flushHeadersFilters()
+    protected static function checkFilterName($type, $name = null, $counter = null)
     {
-        return Arr::set(static::$headersFilters, static::class, []);
+        $name       = $name ?: 'filter';
+        $filterName = $name . ((is_int($counter)) ? '_' . $counter : '');
+
+        if (call_user_func([static::class, $type . 'FilterExists'], $filterName)) {
+            return static::checkFilterName($type, $name, ++$counter);
+        }
+
+        return $filterName;
+    }
+
+    /**
+     * @param $filter
+     * @return bool
+     */
+    public static function checkRequiredFilter($filter)
+    {
+        return ($filter instanceof BaseRequiredFilter) ? $filter : false;
+    }
+
+    /**
+     * @param $filter
+     * @return bool
+     */
+    public static function checkImportantFilter($filter)
+    {
+        return ($filter instanceof BaseImportantFilter) ? $filter : false;
+    }
+
+    /**
+     * @param $filter
+     * @return bool
+     */
+    public static function checkCastFilter($filter)
+    {
+        return ($filter instanceof BaseCastFilter) ? $filter : false;
+    }
+
+    /**
+     * @param $filter
+     * @return bool
+     */
+    protected static function isClosure($filter)
+    {
+        return ($filter instanceof \Closure);
     }
 
     /**

@@ -8,7 +8,7 @@
     "require": {
         "php": ">=5.5.9",
         "arvenil/ninja-mutex": "*",
-        "league/csv": "^8.0"
+        "league/csv": "8.0"
 
     },
     "license": "MIT",
