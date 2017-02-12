@@ -1041,7 +1041,7 @@ abstract class BaseCsvImporter
      */
     public static function getRequiredFilters()
     {
-        return Arr::get(static::$requiredFilters, static::class, []);
+        return static::getFilters(static::REQUIRED);
     }
 
     /**
@@ -1049,7 +1049,7 @@ abstract class BaseCsvImporter
      */
     public static function getImportantFilters()
     {
-        return Arr::get(static::$importantFilters, static::class, []);
+        return static::getFilters(static::IMPORTANT);
     }
 
     /**
@@ -1057,7 +1057,16 @@ abstract class BaseCsvImporter
      */
     public static function getCastFilters()
     {
-        return Arr::get(static::$importantFilters, static::class, []);
+        return static::getFilters(static::CAST);
+    }
+
+    /**
+     * @param $type
+     * @return mixed
+     */
+    protected static function getFilters($type)
+    {
+        return Arr::get(static::${$type . 'Filters'}, static::class, []);
     }
 
     /**
@@ -1066,7 +1075,7 @@ abstract class BaseCsvImporter
      */
     public static function getRequiredFilter($name)
     {
-        return (static::requiredFilterExists($name)) ? static::$requiredFilters[static::class][$name] : null;
+        return static::getFilter(static::REQUIRED, $name);
     }
 
     /**
@@ -1075,7 +1084,7 @@ abstract class BaseCsvImporter
      */
     public static function getImportantFilter($name)
     {
-        return (static::importantFilterExists($name)) ? static::$importantFilters[static::class][$name] : null;
+        return static::getFilter(static::IMPORTANT, $name);
     }
 
     /**
@@ -1084,7 +1093,17 @@ abstract class BaseCsvImporter
      */
     public static function getCastFilter($name)
     {
-        return (static::castFilterExists($name)) ? static::$castFilters[static::class][$name] : null;
+        return static::getFilter(static::CAST, $name);
+    }
+
+    /**
+     * @param $type
+     * @param $name
+     * @return null
+     */
+    protected function getFilter($type, $name)
+    {
+        return (static::filterExists($type, $name)) ? static::${$type . 'Filters'}[static::class][$name] : null;
     }
 
     /**
@@ -1092,7 +1111,7 @@ abstract class BaseCsvImporter
      */
     public static function flushRequiredFilters()
     {
-        return Arr::set(static::$requiredFilters, static::class, []);
+        return static::flushFilters(static::REQUIRED);
     }
 
     /**
@@ -1100,7 +1119,7 @@ abstract class BaseCsvImporter
      */
     public static function flushImportantFilters()
     {
-        return Arr::set(static::$importantFilters, static::class, []);
+        return static::flushFilters(static::IMPORTANT);
     }
 
     /**
@@ -1108,16 +1127,16 @@ abstract class BaseCsvImporter
      */
     public static function flushCastFilters()
     {
-        return Arr::set(static::$importantFilters, static::class, []);
+        return static::flushFilters(static::CAST);
     }
 
     /**
-     * @param $name
-     * @return bool
+     * @param $type
+     * @return array
      */
-    public static function importantFilterExists($name)
+    protected static function flushFilters($type)
     {
-        return isset(static::$importantFilters[static::class][$name]);
+        return Arr::set(static::${$type . 'Filters'}, static::class, []);
     }
 
     /**
@@ -1126,7 +1145,16 @@ abstract class BaseCsvImporter
      */
     public static function requiredFilterExists($name)
     {
-        return isset(static::$requiredFilters[static::class][$name]);
+        return static::filterExists(static::REQUIRED, $name);
+    }
+    
+    /**
+     * @param $name
+     * @return bool
+     */
+    public static function importantFilterExists($name)
+    {
+        return static::filterExists(static::IMPORTANT, $name);
     }
 
     /**
@@ -1135,7 +1163,17 @@ abstract class BaseCsvImporter
      */
     public static function castFilterExists($name)
     {
-        return isset(static::$castFilters[static::class][$name]);
+        return static::filterExists(static::CAST, $name);
+    }
+
+    /**
+     * @param $type
+     * @param $name
+     * @return bool
+     */
+    protected static function filterExists($type, $name)
+    {
+        return isset(static::${$type . 'Filters'}[static::class][$name]);
     }
 
     /**
