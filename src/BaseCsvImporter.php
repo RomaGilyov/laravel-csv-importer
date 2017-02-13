@@ -529,7 +529,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * Insert an item (csv line) to a file from `csv_files` from configuration array
+     * Insert an item (csv line) to a file from `csv_files` configuration array
      *
      * @param $fileName
      * @param $item
