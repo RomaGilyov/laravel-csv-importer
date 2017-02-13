@@ -4,10 +4,15 @@ namespace App\CsvImporter;
 
 use App\CsvImporter\Exceptions\CsvImporterException;
 use \Carbon\Carbon;
+use Illuminate\Cache\FileStore;
+use Illuminate\Cache\MemcachedStore;
+use Illuminate\Cache\RedisStore;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use League\Csv\Writer;
 use League\Csv\Reader;
+use NinjaMutex\Lock\FlockLock;
+use NinjaMutex\Lock\MemcachedLock;
 use NinjaMutex\Lock\PredisRedisLock;
 use NinjaMutex\Mutex;
 use RGilyov\CsvImporter\BaseCastFilter;
@@ -274,7 +279,10 @@ abstract class BaseCsvImporter
      *
      * @return array
      */
-    abstract public function getConfig();
+    public function getConfig()
+    {
+        return [];
+    }
 
     /**
      * If a csv line are valid, the method will be executed on it
@@ -282,7 +290,7 @@ abstract class BaseCsvImporter
      * @param $item
      * @return array
      */
-    abstract public function handle($item);
+    public function handle($item){}
 
     /**
      * If a `important` filter will fail for a csv line, the method will be executed on the line
@@ -290,7 +298,7 @@ abstract class BaseCsvImporter
      * @param $item
      * @return array
      */
-    abstract public function invalid($item);
+    public function invalid($item){}
 
     /**
      * Will be executed before importing, useful to check mappings
@@ -734,8 +742,8 @@ abstract class BaseCsvImporter
             $paths = [];
             foreach ($this->config['csv_paths'] as $key => $path) {
                 if (\Storage::exists($path)) {
-                    $now     = Carbon::now();
-                    $time    = "_" . $now->hour . "_" . $now->minute . "_" . $now->second . "_";
+                    $now  = Carbon::now();
+                    $time = "_" . $now->hour . "_" . $now->minute . "_" . $now->second . "_";
                     $path = (substr_count($path, '.') === 1) ? strtr($path, ".", $time.'.') : ($path . $time);
                 }
 
@@ -795,12 +803,15 @@ abstract class BaseCsvImporter
         if (isset($this->config['mappings']) && is_array($this->config['mappings'])) {
             foreach ($this->config['mappings'] as $field => $rules) {
                 if (isset($rules[self::CAST]) && isset($item[$field])) {
-                    if (is_array($rules[self::CAST])) {
-                        foreach ($rules[self::CAST] as $cast) {
+                    
+                    $castFilter = $rules[self::CAST];
+                    
+                    if (is_array($castFilter)) {
+                        foreach ($castFilter as $cast) {
                             $item[$field] = $this->performCastOnValue($item[$field], $cast);
                         }
-                    } elseif (is_string($rules[self::CAST])) {
-                        $item[$field] = $this->performCastOnValue($item[$field], $rules[self::CAST]);
+                    } elseif (is_string($castFilter)) {
+                        $item[$field] = $this->performCastOnValue($item[$field], $castFilter);
                     }
                 }
             }
@@ -1351,14 +1362,29 @@ abstract class BaseCsvImporter
     */
 
     /**
-     * @return void
+     * @throws CsvImporterException
      */
     protected function setMutex()
     {
-        $cacheClient = $this->cache->connection();
+        $cacheStore = $this->cache->getStore();
 
-        if ($cacheClient instanceof PredisClient) {
-            $this->mutex = new Mutex($this->importLockKey, new PredisRedisLock($cacheClient));
+        if ($cacheStore instanceof RedisStore) {
+            $connection = $cacheStore->connection();
+            if ($connection instanceof PredisClient) {
+                $this->mutex = new Mutex($this->importLockKey, new PredisRedisLock($connection));
+            }
+        } elseif ($cacheStore instanceof MemcachedStore) {
+            $memcached = $cacheStore->getMemcached();
+            if ($memcached instanceof \Memcached) {
+                $this->mutex = new Mutex($this->importLockKey, new MemcachedLock($memcached));
+            }
+        } elseif ($cacheStore instanceof FileStore) {
+            $this->mutex = new Mutex($this->importLockKey, new FlockLock($cacheStore->getDirectory()));
+        } else {
+            throw new CsvImporterException(
+                ['message' => 'Csv importer supports only: file, memcached and redis cache drivers'],
+                400
+            );
         }
     }
 

@@ -13,7 +13,9 @@ class CsvImporterServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        $this->publishes([
+            __DIR__.'/../config/csv-importer.php' => config_path('csv-importer.php')
+        ], 'config');
     }
 
     /**
@@ -23,6 +25,6 @@ class CsvImporterServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->mergeConfigFrom(__DIR__ . '/../config/csv-importer.php', 'csv-importer');
     }
 }
