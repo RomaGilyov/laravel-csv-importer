@@ -15,14 +15,6 @@ use NinjaMutex\Lock\FlockLock;
 use NinjaMutex\Lock\MemcachedLock;
 use NinjaMutex\Lock\PredisRedisLock;
 use NinjaMutex\Mutex;
-use RGilyov\CsvImporter\BaseCastFilter;
-use RGilyov\CsvImporter\BaseRequiredFilter;
-use RGilyov\CsvImporter\BaseImportantFilter;
-use RGilyov\CsvImporter\ClosureCastFilter;
-use RGilyov\CsvImporter\ClosureRequiredFilter;
-use RGilyov\CsvImporter\ClosureImportantFilter;
-use RGilyov\CsvImporter\CsvImporterConfigurationTrait;
-use \Predis\Client as PredisClient;
 
 abstract class BaseCsvImporter
 {
@@ -1064,7 +1056,7 @@ abstract class BaseCsvImporter
      */
     public static function getRequiredFilters()
     {
-        return static::getFilters(static::REQUIRED);
+        return static::getFilters(self::REQUIRED);
     }
 
     /**
@@ -1072,7 +1064,7 @@ abstract class BaseCsvImporter
      */
     public static function getImportantFilters()
     {
-        return static::getFilters(static::IMPORTANT);
+        return static::getFilters(self::IMPORTANT);
     }
 
     /**
@@ -1080,7 +1072,7 @@ abstract class BaseCsvImporter
      */
     public static function getCastFilters()
     {
-        return static::getFilters(static::CAST);
+        return static::getFilters(self::CAST);
     }
 
     /**
@@ -1098,7 +1090,7 @@ abstract class BaseCsvImporter
      */
     public static function getRequiredFilter($name)
     {
-        return static::getFilter(static::REQUIRED, $name);
+        return static::getFilter(self::REQUIRED, $name);
     }
 
     /**
@@ -1107,7 +1099,7 @@ abstract class BaseCsvImporter
      */
     public static function getImportantFilter($name)
     {
-        return static::getFilter(static::IMPORTANT, $name);
+        return static::getFilter(self::IMPORTANT, $name);
     }
 
     /**
@@ -1116,7 +1108,7 @@ abstract class BaseCsvImporter
      */
     public static function getCastFilter($name)
     {
-        return static::getFilter(static::CAST, $name);
+        return static::getFilter(self::CAST, $name);
     }
 
     /**
@@ -1134,7 +1126,7 @@ abstract class BaseCsvImporter
      */
     public static function flushRequiredFilters()
     {
-        return static::flushFilters(static::REQUIRED);
+        return static::flushFilters(self::REQUIRED);
     }
 
     /**
@@ -1142,7 +1134,7 @@ abstract class BaseCsvImporter
      */
     public static function flushImportantFilters()
     {
-        return static::flushFilters(static::IMPORTANT);
+        return static::flushFilters(self::IMPORTANT);
     }
 
     /**
@@ -1150,7 +1142,7 @@ abstract class BaseCsvImporter
      */
     public static function flushCastFilters()
     {
-        return static::flushFilters(static::CAST);
+        return static::flushFilters(self::CAST);
     }
 
     /**
@@ -1168,7 +1160,7 @@ abstract class BaseCsvImporter
      */
     public static function requiredFilterExists($name)
     {
-        return static::filterExists(static::REQUIRED, $name);
+        return static::filterExists(self::REQUIRED, $name);
     }
     
     /**
@@ -1177,7 +1169,7 @@ abstract class BaseCsvImporter
      */
     public static function importantFilterExists($name)
     {
-        return static::filterExists(static::IMPORTANT, $name);
+        return static::filterExists(self::IMPORTANT, $name);
     }
 
     /**
@@ -1186,7 +1178,7 @@ abstract class BaseCsvImporter
      */
     public static function castFilterExists($name)
     {
-        return static::filterExists(static::CAST, $name);
+        return static::filterExists(self::CAST, $name);
     }
 
     /**
