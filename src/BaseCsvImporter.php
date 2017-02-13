@@ -1374,6 +1374,7 @@ abstract class BaseCsvImporter
     */
 
     /**
+     * @return Mutex
      * @throws CsvImporterException
      */
     protected function setMutex()
@@ -1381,23 +1382,27 @@ abstract class BaseCsvImporter
         $cacheStore = $this->cache->getStore();
 
         if ($cacheStore instanceof RedisStore) {
-            $connection = $cacheStore->connection();
-            if ($connection instanceof PredisClient) {
-                $this->mutex = new Mutex($this->importLockKey, new PredisRedisLock($connection));
-            }
-        } elseif ($cacheStore instanceof MemcachedStore) {
-            $memcached = $cacheStore->getMemcached();
-            if ($memcached instanceof \Memcached) {
-                $this->mutex = new Mutex($this->importLockKey, new MemcachedLock($memcached));
-            }
-        } elseif ($cacheStore instanceof FileStore) {
-            $this->mutex = new Mutex($this->importLockKey, new FlockLock($cacheStore->getDirectory()));
-        } else {
-            throw new CsvImporterException(
-                ['message' => 'Csv importer supports only: file, memcached and redis cache drivers'],
-                400
-            );
+            return $this->initMutex(new PredisRedisLock($cacheStore->connection()));
         }
+
+        if ($cacheStore instanceof MemcachedStore) {
+            return $this->initMutex(new MemcachedLock($cacheStore->getMemcached()));
+        }
+
+        if ($cacheStore instanceof FileStore) {
+            return $this->initMutex(new FlockLock($cacheStore->getDirectory()));
+        }
+
+        throw new CsvImporterException(['message' => 'Csv importer supports only: file, memcached and redis cache drivers'], 400);
+    }
+
+    /**
+     * @param $driver
+     * @return Mutex
+     */
+    protected function initMutex($driver)
+    {
+        return $this->mutex = new Mutex($this->importLockKey, $driver);
     }
 
     /**
