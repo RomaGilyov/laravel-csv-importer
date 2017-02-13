@@ -1,0 +1,31 @@
+<?php
+
+namespace DummyNamespace;
+
+use RGilyov\CsvImporter\BaseCsvImporter;
+
+class DummyClass extends BaseCsvImporter
+{
+    public function config()
+    {
+        return [
+            'mappings' => [
+                'name' => ['required', 'important', 'cast' => 'string']
+            ],
+            'csv_files' => [
+                'successfully_imported' => storage_path('import/successfully_imported.csv'),
+                'invalid_entities'      => storage_path('import/invalid_entities.csv'),
+            ]
+        ];
+    }
+
+    public function handle($item)
+    {
+        $this->insertTo('successfully_imported', $item);
+    }
+
+    public function invalid($item)
+    {
+        $this->insertTo('invalid_entities', $item);
+    }
+}

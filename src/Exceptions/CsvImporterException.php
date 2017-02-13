@@ -1,6 +1,6 @@
 <?php
 
-namespace App\CsvImporter\Exceptions;
+namespace RGilyov\CsvImporter\Exceptions;
 
 /**
  * Class CsvImporterException

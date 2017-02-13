@@ -1,8 +1,8 @@
 <?php
 
-namespace App\CsvImporter;
+namespace RGilyov\CsvImporter;
 
-use App\CsvImporter\Exceptions\CsvImporterException;
+use RGilyov\CsvImporter\Exceptions\CsvImporterException;
 use \Carbon\Carbon;
 use Illuminate\Cache\FileStore;
 use Illuminate\Cache\MemcachedStore;
@@ -202,7 +202,7 @@ abstract class BaseCsvImporter
         $this->ourEncoding   = $this->getConfigProperty('encoding', 'UTF-8', 'string');
         $this->fileEncoding  = $this->getConfigProperty('encoding', 'UTF-8', 'string');
 
-        $this->config        = $this->getConfig();
+        $this->config        = $this->config();
         $this->csvWriters    = collect([]);
         $this->cache         = app()['cache.store'];
 
@@ -279,7 +279,7 @@ abstract class BaseCsvImporter
      *
      * @return array
      */
-    public function getConfig()
+    public function config()
     {
         return [];
     }
@@ -536,6 +536,18 @@ abstract class BaseCsvImporter
         return ( bool )$this->csvFile;
     }
 
+    /**
+     * Insert an item (csv line) to a file from `csv_files` from configuration array
+     *
+     * @param $fileName
+     * @param $item
+     * @return bool
+     */
+    public function insertTo($fileName, $item)
+    {
+        return isset($this->csvWriters[$fileName]) ? $this->csvWriters[$fileName]->insertOne($item) : false;
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Api methods
@@ -738,9 +750,9 @@ abstract class BaseCsvImporter
      */
     protected function setWriters()
     {
-        if (isset($this->config['csv_paths'])) {
+        if (isset($this->config['csv_files'])) {
             $paths = [];
-            foreach ($this->config['csv_paths'] as $key => $path) {
+            foreach ($this->config['csv_files'] as $key => $path) {
                 if (\Storage::exists($path)) {
                     $now  = Carbon::now();
                     $time = "_" . $now->hour . "_" . $now->minute . "_" . $now->second . "_";
