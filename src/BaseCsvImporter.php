@@ -282,7 +282,10 @@ abstract class BaseCsvImporter
      * @param $item
      * @return array
      */
-    public function handle($item){}
+    public function handle($item)
+    {
+
+    }
 
     /**
      * If a `important` filter will fail for a csv line, the method will be executed on the line
@@ -290,7 +293,10 @@ abstract class BaseCsvImporter
      * @param $item
      * @return array
      */
-    public function invalid($item){}
+    public function invalid($item)
+    {
+
+    }
 
     /**
      * Will be executed before importing, useful to check mappings
@@ -1232,7 +1238,7 @@ abstract class BaseCsvImporter
         }
 
         if ($resolved) {
-            return static::${$type . 'Filters'}[static::class][static::filterName($type, $name, $filter)] = $resolved;
+            return static::${$type . 'Filters'}[static::class][static::filterName($type, $resolved, $name)] = $resolved;
         }
 
         return false;
