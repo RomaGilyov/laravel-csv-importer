@@ -35,7 +35,7 @@ return array(
 
     'mutex_lock_time' => 300,
     
-    'memory_limit' => 256,
+    'memory_limit' => 128,
     
     'artifacts' => [],
     

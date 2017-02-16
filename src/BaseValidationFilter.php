@@ -1,6 +1,6 @@
 <?php namespace RGilyov\CsvImporter;
 
-abstract class BaseImportantFilter
+abstract class BaseValidationFilter
 {
     /**
      * @param array $csvItem

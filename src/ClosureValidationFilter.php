@@ -1,6 +1,6 @@
 <?php namespace RGilyov\CsvImporter;
 
-class ClosureImportantFilter extends BaseImportantFilter
+class ClosureValidationFilter extends BaseValidationFilter
 {
     /**
      * @var \Closure

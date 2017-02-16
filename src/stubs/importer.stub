@@ -10,7 +10,8 @@ class DummyClass extends BaseCsvImporter
     {
         return [
             'mappings' => [
-                'name' => ['required', 'important', 'cast' => 'string']
+                'name'  => ['required', 'validation' => ['required'], 'cast' => 'string']
+                'email' => ['required', 'validation' => ['email'], 'cast' => 'string']
             ],
             'csv_files' => [
                 'successfully_imported' => storage_path('import/successfully_imported.csv'),

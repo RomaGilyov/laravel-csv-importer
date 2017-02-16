@@ -21,21 +21,21 @@ abstract class BaseCsvImporter
     use CsvImporterConfigurationTrait;
 
     /**
-     *  If a filed has important value then data will be validated before handle method
-     *  so if a field are empty then an item won't be handled, and invalid method will be executed,
-     *  no errors will be displayed
-     *
+     * If a header has `validation` array inside configuration array
+     * the value will be checked according to given validation rules
+     * 
      * @var string
      */
-    const IMPORTANT = 'important';
+    const VALIDATION = 'validation';
 
     /**
      * @var array
      */
-    protected static $importantFilters = [];
+    protected static $validationFilters = [];
 
     /**
-     * If a field has required value and the field won't be in the csv headers, an error will be shown
+     * If a header has `required` value inside configuration array
+     * and the header won't be in the csv's headers, an error will be thrown
      *
      * @var string
      */
@@ -66,7 +66,7 @@ abstract class BaseCsvImporter
     protected $baseConfig;
 
     /**
-     * Csv mapping and rules
+     * Csv mappings and rules
      *
      * @var array
      */
@@ -235,7 +235,7 @@ abstract class BaseCsvImporter
         /*
          * Make sure we have enough memory for the import
          */
-        ini_set('memory_limit', $this->getConfigProperty('memory_limit', 256, 'integer') . 'M');
+        ini_set('memory_limit', $this->getConfigProperty('memory_limit', 128, 'integer') . 'M');
 
         /*
          * Make sure the script will run as long as we set mutex lock time
@@ -267,7 +267,7 @@ abstract class BaseCsvImporter
     */
 
     /**
-     * We should specify csv mappings and rules here
+     * Specify csv mappings and rules here
      *
      * @return array
      */
@@ -277,7 +277,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * If a csv line are valid, the method will be executed on it
+     * If a csv line is valid, the method will be executed on it
      *
      * @param $item
      * @return array
@@ -288,7 +288,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * If a `important` filter will fail for a csv line, the method will be executed on the line
+     * If a csv line will not pass `validation` filters, the method will be executed on the line
      *
      * @param $item
      * @return array
@@ -299,7 +299,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * Will be executed before importing, useful to check mappings
+     * Will be executed before importing
      *
      * @return void
      */
@@ -319,7 +319,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * You may specify custom progress message during import process
+     * Specify custom progress message during import process
      *
      * @param string $message
      */
@@ -330,7 +330,7 @@ abstract class BaseCsvImporter
 
     /**
      * You may change mutex key with concatenation,
-     * important when you have multiple imports for one import class at the same time
+     * useful when you have multiple imports for one import class at the same time
      *
      * @param $concat
      * @return void
@@ -338,11 +338,15 @@ abstract class BaseCsvImporter
     public function concatMutexKey($concat)
     {
         $this->importLockKey = $this->importLockKey . $concat;
+
+        /*
+         * Important to reset all keys after concatenation due to all keys depends on `importLockKey`
+         */
         $this->setKeys();
     }
 
     /**
-     * You may drop progress bar
+     * Drop progress quantity
      *
      * @return void
      */
@@ -352,7 +356,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * You may re initialize progress bar
+     * Initialize new progress bar
      *
      * @param $message
      * @param $quantity
@@ -365,7 +369,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     *  You may adjust additional information to progress bar during import process
+     *  Adjust additional information to progress bar during import process
      *
      * @return null|string|array
      */
@@ -375,7 +379,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * You may also set final details to your importer, which a user will see at the end of import process
+     * Set final details to your importer, which a user will see at the end of the import process
      *
      * @param $details
      */
@@ -385,7 +389,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     *  Will be executed when current import process will be canceled
+     *  Will be executed during the import process canceling
      */
     public function onCancel()
     {
@@ -440,7 +444,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * You may specify encoding of your file, UTF-8 by default
+     * Specify encoding of your file, UTF-8 by default
      *
      * @param string $encoding
      * @return $this
@@ -453,7 +457,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * You may specify date format that contains your csv file, dd-mm-yyyy by default
+     * Specify date format that contains your csv file, yyyy-dd-mm by default
      *
      * @param $format
      * @return $this
@@ -539,11 +543,19 @@ abstract class BaseCsvImporter
      *
      * @param $fileName
      * @param $item
-     * @return bool
+     * @return mixed
+     * @throws CsvImporterException
      */
     public function insertTo($fileName, $item)
     {
-        return isset($this->csvWriters[$fileName]) ? $this->csvWriters[$fileName]->insertOne($item) : false;
+        if (isset($this->csvWriters[$fileName])) {
+            return $this->csvWriters[$fileName]->insertOne($item);
+        }
+
+        throw new CsvImporterException(
+            ['message' => $fileName . ' file was not found, please check `csv_files` paths inside your configurations'],
+            400
+        );
     }
 
     /*
@@ -579,7 +591,7 @@ abstract class BaseCsvImporter
      */
     public function finish()
     {
-        if (!$this->isFinished()) {
+        if (!$this->isLocked() || !$this->isFinished()) {
             return $this->progressBar();
         }
 
@@ -594,13 +606,13 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * You can cancel your import process in any time
+     * Cancel your import process in any time
      *
-     * @return void
+     * @return bool
      */
     public function cancel()
     {
-        $this->cache->put($this->progressCancelKey, true, $this->mutexLockTime);
+        return $this->cache->put($this->progressCancelKey, true, $this->mutexLockTime);
     }
 
     /**
@@ -774,7 +786,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * Inside the `invalid` or `handle` methods you may get fields that was specified in the configurations
+     * Extract fields which is were specified inside `mappings` array in the configurations, from the given csv line
      *
      * @param array $item
      * @return array
@@ -782,9 +794,12 @@ abstract class BaseCsvImporter
     protected function getDefinedFields(array $item)
     {
         $configMappings = [];
-        foreach ($this->config['mappings'] as $key => $value) {
-            if (isset($item[$key])) {
-                $configMappings[$key] = $item[$key];
+
+        if (isset($this->config['mappings']) && is_array($this->config['mappings'])) {
+            foreach ($this->config['mappings'] as $key => $value) {
+                if (isset($item[$key])) {
+                    $configMappings[$key] = $item[$key];
+                }
             }
         }
 
@@ -810,7 +825,7 @@ abstract class BaseCsvImporter
      */
     protected function castFields(array $item)
     {
-        if (isset($this->config['mappings']) && is_array($this->config['mappings'])) {
+        if ($this->configMappingsExists()) {
             foreach ($this->config['mappings'] as $field => $rules) {
                 if (isset($rules[self::CAST]) && isset($item[$field])) {
                     
@@ -932,7 +947,7 @@ abstract class BaseCsvImporter
     /**
      * @return array
      */
-    protected function getErrors()
+    public function getErrors()
     {
         return $this->errors;
     }
@@ -943,25 +958,42 @@ abstract class BaseCsvImporter
      */
     protected function validateItem(array $item)
     {
-        foreach ($this->getFieldsWithRules(self::IMPORTANT) as $field) {
-            if (isset($item[$field])) {
-                if (null === $item[$field] || '' === $item[$field]) {
-                    return false;
+        if ($this->configMappingsExists()) {
+            $validatorRules = [];
+
+            foreach ($this->config['mappings'] as $field => $rules) {
+                if (isset($rules[self::VALIDATION]) && isset($item[$field])) {
+                    $validatorRules[$field] = $rules[self::VALIDATION];
                 }
+            }
+
+            if (!empty($validatorRules) && !$this->passes($item, $validatorRules)) {
+                return false;
             }
         }
 
-        return $this->executeImportantFilters($item);
+        return $this->executeValidationFilters($item);
     }
+
+    /**
+     * @param array $item
+     * @param array $validationRules
+     * @return bool
+     */
+    protected function passes(array $item, array $validationRules)
+    {
+        return \Validator::make($item, $validationRules)->passes();
+    }
+    
 
     /**
      * @param array $item
      * @return bool
      */
-    protected function executeImportantFilters(array $item)
+    protected function executeValidationFilters(array $item)
     {
-        foreach (static::getImportantFilters() as $filter) {
-            if ($filter instanceof BaseImportantFilter) {
+        foreach (static::getValidationFilters() as $filter) {
+            if ($filter instanceof BaseValidationFilter) {
                 if (!$filter->filter($item)) {
                     return false;
                 }
@@ -976,7 +1008,7 @@ abstract class BaseCsvImporter
      */
     protected function validateHeaders()
     {
-        foreach ($this->getFieldsWithRules(self::REQUIRED) as $field) {
+        foreach ($this->getRequiredHeaders() as $field) {
             if (array_search($field, $this->headers) === false) {
                 $this->setError('Required fields not found:', 'The "' . $field . '" field is required');
             }
@@ -1013,9 +1045,9 @@ abstract class BaseCsvImporter
      * @parameters BaseHeaderFilter
      * @return array
      */
-    public static function addImportantFilters()
+    public static function addValidationFilters()
     {
-        return static::addFilters(self::IMPORTANT, func_get_args());
+        return static::addFilters(self::VALIDATION, func_get_args());
     }
 
     /**
@@ -1030,7 +1062,7 @@ abstract class BaseCsvImporter
     /**
      * @param $filter
      * @param null $name
-     * @return bool|ClosureCastFilter|ClosureImportantFilter|ClosureRequiredFilter
+     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureRequiredFilter
      */
     public static function addRequiredFilter($filter, $name = null)
     {
@@ -1040,17 +1072,17 @@ abstract class BaseCsvImporter
     /**
      * @param $filter
      * @param null $name
-     * @return bool|ClosureCastFilter|ClosureImportantFilter|ClosureRequiredFilter
+     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureRequiredFilter
      */
-    public static function addImportantFilter($filter, $name = null)
+    public static function addValidationFilter($filter, $name = null)
     {
-        return static::addFilter(self::IMPORTANT, $filter, $name);
+        return static::addFilter(self::VALIDATION, $filter, $name);
     }
 
     /**
      * @param $filter
      * @param null $name
-     * @return bool|ClosureCastFilter|ClosureImportantFilter|ClosureRequiredFilter
+     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureRequiredFilter
      */
     public static function addCastFilter($filter, $name = null)
     {
@@ -1068,9 +1100,9 @@ abstract class BaseCsvImporter
     /**
      * @return array
      */
-    public static function getImportantFilters()
+    public static function getValidationFilters()
     {
-        return static::getFilters(self::IMPORTANT);
+        return static::getFilters(self::VALIDATION);
     }
 
     /**
@@ -1103,9 +1135,9 @@ abstract class BaseCsvImporter
      * @param $name
      * @return mixed
      */
-    public static function getImportantFilter($name)
+    public static function getValidationFilter($name)
     {
-        return static::getFilter(self::IMPORTANT, $name);
+        return static::getFilter(self::VALIDATION, $name);
     }
 
     /**
@@ -1138,9 +1170,9 @@ abstract class BaseCsvImporter
     /**
      * @return array
      */
-    public static function flushImportantFilters()
+    public static function flushValidationFilters()
     {
-        return static::flushFilters(self::IMPORTANT);
+        return static::flushFilters(self::VALIDATION);
     }
 
     /**
@@ -1173,9 +1205,9 @@ abstract class BaseCsvImporter
      * @param $name
      * @return bool
      */
-    public static function importantFilterExists($name)
+    public static function ValidationFilterExists($name)
     {
-        return static::filterExists(self::IMPORTANT, $name);
+        return static::filterExists(self::VALIDATION, $name);
     }
 
     /**
@@ -1219,7 +1251,7 @@ abstract class BaseCsvImporter
      * @param $type
      * @param $filter
      * @param null $name
-     * @return bool|ClosureCastFilter|ClosureImportantFilter|ClosureRequiredFilter
+     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureRequiredFilter
      */
     private static function addFilter($type, $filter, $name = null)
     {
@@ -1229,8 +1261,8 @@ abstract class BaseCsvImporter
             case self::REQUIRED:
                 $resolved = (static::isClosure($filter)) ? new ClosureRequiredFilter($filter) : static::checkRequiredFilter($filter);
                 break;
-            case self::IMPORTANT:
-                $resolved = (static::isClosure($filter)) ? new ClosureImportantFilter($filter) : static::checkImportantFilter($filter);
+            case self::VALIDATION:
+                $resolved = (static::isClosure($filter)) ? new ClosureValidationFilter($filter) : static::checkValidationFilter($filter);
                 break;
             case self::CAST:
                 $resolved = (static::isClosure($filter)) ? new ClosureCastFilter($filter) : static::checkCastFilter($filter);
@@ -1288,9 +1320,9 @@ abstract class BaseCsvImporter
      * @param $filter
      * @return bool
      */
-    public static function checkImportantFilter($filter)
+    public static function checkValidationFilter($filter)
     {
-        return ($filter instanceof BaseImportantFilter) ? $filter : false;
+        return ($filter instanceof BaseValidationFilter) ? $filter : false;
     }
 
     /**
@@ -1347,22 +1379,29 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * @param string $rule
      * @return array
      */
-    protected function getFieldsWithRules($rule)
+    protected function getRequiredHeaders()
     {
         $fieldsWithRules = [];
 
-        if (isset($this->config['mappings']) && is_array($this->config['mappings'])) {
+        if ($this->configMappingsExists()) {
             foreach ($this->config['mappings'] as $field => $rules) {
-                if (array_search($rule, $rules) !== false) {
+                if (array_search(self::REQUIRED, $rules) !== false) {
                     $fieldsWithRules[] = $field;
                 }
             }
         }
 
         return $fieldsWithRules;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function configMappingsExists()
+    {
+        return (isset($this->config['mappings']) && is_array($this->config['mappings']));
     }
 
     /*
