@@ -1,0 +1,21 @@
+<?php
+
+namespace DummyNamespace;
+
+use RGilyov\CsvImporter\BaseValidationFilter;
+
+class DummyClass extends BaseValidationFilter
+{
+    /**
+     * @param array $csvItem
+     * @return bool
+     */
+    public function filter(array $csvItem)
+    {
+        if (strpos($csvItem['name'], 'some bad word') !== false) {
+            return false;
+        }
+
+        return true;
+    }
+}

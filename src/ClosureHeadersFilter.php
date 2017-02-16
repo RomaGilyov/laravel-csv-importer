@@ -1,6 +1,6 @@
 <?php namespace RGilyov\CsvImporter;
 
-class ClosureRequiredFilter extends BaseRequiredFilter
+class ClosureHeadersFilter extends BaseHeadersFilter
 {
     /**
      * @var \Closure
@@ -8,7 +8,7 @@ class ClosureRequiredFilter extends BaseRequiredFilter
     protected $closure;
 
     /**
-     * ClosureRequiredFilter constructor.
+     * ClosureHeadersFilter constructor.
      * @param \Closure $closure
      */
     public function __construct(\Closure $closure)

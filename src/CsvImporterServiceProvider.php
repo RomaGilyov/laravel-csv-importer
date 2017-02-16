@@ -3,6 +3,10 @@
 namespace RGilyov\CsvImporter;
 
 use Illuminate\Support\ServiceProvider;
+use RGilyov\CsvImporter\Commands\MakeCastFilter;
+use RGilyov\CsvImporter\Commands\MakeCsvImporter;
+use RGilyov\CsvImporter\Commands\MakeHeadersFilter;
+use RGilyov\CsvImporter\Commands\MakeValidationFilter;
 
 class CsvImporterServiceProvider extends ServiceProvider
 {
@@ -25,6 +29,13 @@ class CsvImporterServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/csv-importer.php', 'csv-importer');
+        $this->mergeConfigFrom(__DIR__ . '/config/csv-importer.php', 'csv-importer');
+
+        $this->commands([
+            MakeCsvImporter::class,
+            MakeHeadersFilter::class,
+            MakeValidationFilter::class,
+            MakeCastFilter::class
+        ]);
     }
 }

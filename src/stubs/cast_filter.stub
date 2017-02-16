@@ -1,0 +1,17 @@
+<?php
+
+namespace DummyNamespace;
+
+use RGilyov\CsvImporter\BaseCastFilter;
+
+class DummyClass extends BaseCastFilter
+{
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function filter($value)
+    {
+        return ucfirst(strtolower($value));
+    }
+}

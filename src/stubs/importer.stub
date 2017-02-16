@@ -6,25 +6,44 @@ use RGilyov\CsvImporter\BaseCsvImporter;
 
 class DummyClass extends BaseCsvImporter
 {
-    public function config()
+    /**
+     *  Specify mappings and rules for our csv, we also may create csv files when we can write csv entities
+     *
+     * @return array
+     */
+    public function csvConfigurations()
     {
         return [
             'mappings' => [
-                'name'  => ['required', 'validation' => ['required'], 'cast' => 'string']
-                'email' => ['required', 'validation' => ['email'], 'cast' => 'string']
+                'name'  => ['required', 'validation' => ['required'], 'cast' => 'string'],
+                'email' => ['validation' => ['email'], 'cast' => 'string']
             ],
             'csv_files' => [
-                'successfully_imported' => storage_path('import/successfully_imported.csv'),
-                'invalid_entities'      => storage_path('import/invalid_entities.csv'),
+                'valid_entities'   => storage_path('import/valid_entities.csv'),
+                'invalid_entities' => storage_path('import/invalid_entities.csv'),
             ]
         ];
     }
 
+    /**
+     *  Will be executed for a csv line if it passes validation
+     *
+     * @param $item
+     * @throws \RGilyov\CsvImporter\Exceptions\CsvImporterException
+     * @return void
+     */
     public function handle($item)
     {
-        $this->insertTo('successfully_imported', $item);
+        $this->insertTo('valid_entities', $item);
     }
 
+    /**
+     *  Will be executed if a csv line did not pass validation
+     *
+     * @param $item
+     * @throws \RGilyov\CsvImporter\Exceptions\CsvImporterException
+     * @return void
+     */
     public function invalid($item)
     {
         $this->insertTo('invalid_entities', $item);

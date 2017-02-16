@@ -1,6 +1,6 @@
 <?php namespace RGilyov\CsvImporter;
 
-abstract class BaseRequiredFilter
+abstract class BaseHeadersFilter
 {
     /**
      * Specify error message for the header filter
@@ -13,7 +13,7 @@ abstract class BaseRequiredFilter
      * @param array $csvHeaders
      * @return bool
      */
-    abstract protected function filter(array $csvHeaders);
+    abstract public function filter(array $csvHeaders);
 
     /**
      * @param array $csvHeaders

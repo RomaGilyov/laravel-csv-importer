@@ -194,7 +194,7 @@ abstract class BaseCsvImporter
         $this->ourEncoding   = $this->getConfigProperty('encoding', 'UTF-8', 'string');
         $this->fileEncoding  = $this->getConfigProperty('encoding', 'UTF-8', 'string');
 
-        $this->config        = $this->config();
+        $this->config        = $this->csvConfigurations();
         $this->csvWriters    = collect([]);
         $this->cache         = app()['cache.store'];
 
@@ -271,7 +271,7 @@ abstract class BaseCsvImporter
      *
      * @return array
      */
-    public function config()
+    public function csvConfigurations()
     {
         return [];
     }
@@ -397,7 +397,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * You may to transform any array to given csv headers
+     * Transform any array to given csv headers
      *
      * @param array $data
      * @return array
@@ -457,7 +457,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * Specify date format that contains your csv file, yyyy-dd-mm by default
+     * Specify date format that contains your csv file, yyyy-mm-dd by default
      *
      * @param $format
      * @return $this
@@ -671,7 +671,7 @@ abstract class BaseCsvImporter
 
         $this->before();
         $this->initProgressBar(
-            $this->getConfigProperty('progress', 'Import process is running', 'string'),
+            $this->getConfigProperty('progress', '', 'string'),
             $this->countCsv()
         );
 
@@ -1023,7 +1023,7 @@ abstract class BaseCsvImporter
     protected function executeHeadersFilters()
     {
         foreach (static::getRequiredFilters() as $filter) {
-            if ($filter instanceof BaseRequiredFilter) {
+            if ($filter instanceof BaseHeadersFilter) {
                 $result = $filter->executeFilter($this->headers);
                 if ($result->error) {
                     $this->setError('Headers error:', $result->message);
@@ -1062,7 +1062,7 @@ abstract class BaseCsvImporter
     /**
      * @param $filter
      * @param null $name
-     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureRequiredFilter
+     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureHeadersFilter
      */
     public static function addRequiredFilter($filter, $name = null)
     {
@@ -1072,7 +1072,7 @@ abstract class BaseCsvImporter
     /**
      * @param $filter
      * @param null $name
-     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureRequiredFilter
+     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureHeadersFilter
      */
     public static function addValidationFilter($filter, $name = null)
     {
@@ -1082,7 +1082,7 @@ abstract class BaseCsvImporter
     /**
      * @param $filter
      * @param null $name
-     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureRequiredFilter
+     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureHeadersFilter
      */
     public static function addCastFilter($filter, $name = null)
     {
@@ -1251,7 +1251,7 @@ abstract class BaseCsvImporter
      * @param $type
      * @param $filter
      * @param null $name
-     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureRequiredFilter
+     * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureHeadersFilter
      */
     private static function addFilter($type, $filter, $name = null)
     {
@@ -1259,7 +1259,7 @@ abstract class BaseCsvImporter
 
         switch ($type) {
             case self::REQUIRED:
-                $resolved = (static::isClosure($filter)) ? new ClosureRequiredFilter($filter) : static::checkRequiredFilter($filter);
+                $resolved = (static::isClosure($filter)) ? new ClosureHeadersFilter($filter) : static::checkRequiredFilter($filter);
                 break;
             case self::VALIDATION:
                 $resolved = (static::isClosure($filter)) ? new ClosureValidationFilter($filter) : static::checkValidationFilter($filter);
@@ -1313,7 +1313,7 @@ abstract class BaseCsvImporter
      */
     public static function checkRequiredFilter($filter)
     {
-        return ($filter instanceof BaseRequiredFilter) ? $filter : false;
+        return ($filter instanceof BaseHeadersFilter) ? $filter : false;
     }
 
     /**
@@ -1430,7 +1430,10 @@ abstract class BaseCsvImporter
             return $this->initMutex(new FlockLock($cacheStore->getDirectory()));
         }
 
-        throw new CsvImporterException(['message' => 'Csv importer supports only: file, memcached and redis cache drivers'], 400);
+        throw new CsvImporterException(
+            ['message' => 'Csv importer supports only: file, memcached and redis cache drivers'],
+            400
+        );
     }
 
     /**
@@ -1506,24 +1509,24 @@ abstract class BaseCsvImporter
 
         if ($progress->finished) {
             return [
-                'data' => ["message"  => $this->getConfigProperty('finished', "Successfully finished", 'string')],
+                'data' => ["message"  => $this->getConfigProperty('finished', "", 'string')],
                 'meta' => ["finished" => true, 'init' => false, 'running' => false]
             ];
         } elseif (!$progress->quantity && !$this->isLocked()) {
             return [
                 'data' => [
-                    "message"  => $this->getConfigProperty('does_not_running', "Import process doesn't run", 'string')
+                    "message"  => $this->getConfigProperty('does_not_running', "", 'string')
                 ],
                 'meta' => ["finished" => false, 'init' => false, 'running' => false]
             ];
         } elseif (!$progress->quantity && $this->isLocked()) {
                 return [
-                    'data' => ["message" => $this->getConfigProperty('initialization', "Initialization", 'string')],
+                    'data' => ["message" => $this->getConfigProperty('initialization', "", 'string')],
                     'meta' => ["finished" => false, 'init' => true, 'running' => true]
                 ];
         } elseif (($progress->quantity == $progress->processed) && $this->isLocked()) {
             return [
-                'data' => ["message"  => $this->getConfigProperty('final_stage', "Final stage", 'string')],
+                'data' => ["message"  => $this->getConfigProperty('final_stage', "", 'string')],
                 'meta' => ["finished" => false, 'init' => false, 'running' => true]
             ];
         } else {
@@ -1558,7 +1561,7 @@ abstract class BaseCsvImporter
 
         $data = [
             'data' => [
-                "message"  => $this->getConfigProperty('final', 'The import process successfully finished!', 'string')
+                "message"  => $this->getConfigProperty('final', '', 'string')
             ],
             'meta' => ["finished" => true, 'init' => false, 'running' => false]
         ];

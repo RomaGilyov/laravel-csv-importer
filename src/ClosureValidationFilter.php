@@ -8,7 +8,7 @@ class ClosureValidationFilter extends BaseValidationFilter
     protected $closure;
 
     /**
-     * ClosureValueFilter constructor.
+     * ClosureValidationFilter constructor.
      * @param \Closure $closure
      */
     public function __construct(\Closure $closure)

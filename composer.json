@@ -8,8 +8,12 @@
     "require": {
         "php": ">=5.5.9",
         "arvenil/ninja-mutex": "*",
-        "league/csv": "8.0"
-
+        "league/csv": "8.0",
+        "illuminate/validation": "~4.2|^5",
+        "illuminate/config": "~4.2|^5",
+        "illuminate/cache": "~4.2|^5",
+        "illuminate/console": "~4.2|^5",
+        "nesbot/carbon": "~1.20"
     },
     "license": "MIT",
     "authors": [
