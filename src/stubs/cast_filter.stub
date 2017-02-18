@@ -7,11 +7,16 @@ use RGilyov\CsvImporter\BaseCastFilter;
 class DummyClass extends BaseCastFilter
 {
     /**
+     * @return string
+     */
+    protected $name = 'lowercase';
+
+    /**
      * @param $value
      * @return mixed
      */
     public function filter($value)
     {
-        return ucfirst(strtolower($value));
+        return strtolower($value);
     }
 }

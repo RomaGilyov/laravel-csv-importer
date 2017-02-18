@@ -2,6 +2,8 @@
 
 abstract class BaseHeadersFilter
 {
+    use NameableTrait;
+    
     /**
      * Specify error message for the header filter
      *

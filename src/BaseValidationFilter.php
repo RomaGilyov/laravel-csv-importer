@@ -2,6 +2,8 @@
 
 abstract class BaseValidationFilter
 {
+    use NameableTrait;
+
     /**
      * @param array $csvItem
      * @return bool

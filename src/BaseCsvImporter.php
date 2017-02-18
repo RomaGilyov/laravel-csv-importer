@@ -47,7 +47,7 @@ abstract class BaseCsvImporter
     protected static $requiredFilters = [];
 
     /**
-     * If a field has cast key the name of function in the value will be executed on the field
+     * Cast given value either to native php type either to some custom format
      *
      * @var string
      */
@@ -92,7 +92,22 @@ abstract class BaseCsvImporter
     /**
      * @var string
      */
-    protected $delimiter = ',';
+    protected $delimiter;
+
+    /**
+     * @var string
+     */
+    protected $enclosure;
+
+    /**
+     * @var string
+     */
+    protected $escape;
+
+    /**
+     * @var string
+     */
+    protected $newline;
 
     /**
      * @var array
@@ -129,12 +144,12 @@ abstract class BaseCsvImporter
     /**
      * @var string
      */
-    protected $fileEncoding;
+    protected $inputEncoding;
 
     /**
      * @var string
      */
-    protected $ourEncoding;
+    protected $outputEncoding;
 
     /**
      * @var string
@@ -181,16 +196,21 @@ abstract class BaseCsvImporter
      */
     public function __construct()
     {
-        $this->baseConfig    = $this->getBaseConfig();
+        $this->baseConfig     = $this->getBaseConfig();
 
-        $this->mutexLockTime = $this->getConfigProperty('mutex_lock_time', 300, 'integer');
-        $this->importLockKey = $this->getConfigProperty('import_lock_key', static::class, 'string');
-        $this->ourEncoding   = $this->getConfigProperty('encoding', 'UTF-8', 'string');
-        $this->fileEncoding  = $this->getConfigProperty('encoding', 'UTF-8', 'string');
+        $this->mutexLockTime  = $this->getConfigProperty('mutex_lock_time', 300, 'integer');
+        $this->importLockKey  = $this->getConfigProperty('import_lock_key', static::class, 'string');
+        $this->outputEncoding = $this->getConfigProperty('output_encoding', 'UTF-8', 'string');
+        $this->inputEncoding  = $this->getConfigProperty('input_encoding', 'UTF-8', 'string');
 
-        $this->config        = $this->csvConfigurations();
-        $this->csvWriters    = collect([]);
-        $this->cache         = app()['cache.store'];
+        $this->delimiter      = $this->getConfigProperty('delimiter', ',', 'string');
+        $this->enclosure      = $this->getConfigProperty('enclosure', '"', 'string');
+        $this->escape         = $this->getConfigProperty('escape', '\\', 'string');
+        $this->newline        = $this->getConfigProperty('newline', "\n", 'string');
+
+        $this->config         = $this->csvConfigurations();
+        $this->csvWriters     = collect([]);
+        $this->cache          = app()['cache.store'];
 
         $this->setKeys();
     }
@@ -425,14 +445,49 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * `,` by default
-     *
      * @param string $delimiter
      * @return $this
      */
     public function setDelimiter($delimiter)
     {
         $this->delimiter = $delimiter;
+        $this->resetReader();
+
+        return $this;
+    }
+
+    /**
+     * @param string $enclosure
+     * @return $this
+     */
+    public function setEnclosure($enclosure)
+    {
+        $this->enclosure = $enclosure;
+        $this->resetReader();
+
+        return $this;
+    }
+
+    /**
+     * @param string $escape
+     * @return $this
+     */
+    public function setEscape($escape)
+    {
+        $this->escape = $escape;
+        $this->resetReader();
+
+        return $this;
+    }
+
+    /**
+     * @param string $newline
+     * @return $this
+     */
+    public function setNewline($newline)
+    {
+        $this->newline = $newline;
+        $this->resetReader();
 
         return $this;
     }
@@ -443,9 +498,22 @@ abstract class BaseCsvImporter
      * @param string $encoding
      * @return $this
      */
-    public function setFileEncoding($encoding)
+    public function setInputEncoding($encoding)
     {
-        $this->fileEncoding = $encoding;
+        $this->inputEncoding = $encoding;
+
+        return $this;
+    }
+
+    /**
+     * Specify encoding of your file, UTF-8 by default
+     *
+     * @param string $encoding
+     * @return $this
+     */
+    public function setOutputEncoding($encoding)
+    {
+        $this->outputEncoding = $encoding;
 
         return $this;
     }
@@ -461,6 +529,21 @@ abstract class BaseCsvImporter
         $this->csvDateFormat = $format;
 
         return $this;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Getter
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * @param $name
+     * @return null
+     */
+    public function __get($name)
+    {
+        return (property_exists($this, $name)) ? $this->{$name} : null;
     }
 
     /*
@@ -715,13 +798,10 @@ abstract class BaseCsvImporter
      */
     protected function checkEncoding(array $item)
     {
-        $fileEncoding    = strtolower($this->fileEncoding);
-        $defaultEncoding = strtolower($this->ourEncoding);
-
-        foreach ($item as $key => &$value) {
-            if (is_string($value) && !is_numeric($value)) {
-                if ($defaultEncoding != $fileEncoding) {
-                    $item[$key] = iconv($this->fileEncoding, $this->ourEncoding, $value);
+        if (strcasecmp($this->inputEncoding, $this->outputEncoding) !== 0) {
+            foreach ($item as $key => $value) {
+                if (is_string($value) && !is_numeric($value)) {
+                    $item[$key] = iconv($this->inputEncoding, $this->outputEncoding, $value);
                 }
             }
         }
@@ -734,8 +814,23 @@ abstract class BaseCsvImporter
      */
     protected function setReader()
     {
-        $this->csvReader = Reader::createFromPath($this->csvFile)->setDelimiter($this->delimiter);
-        $this->headers   = array_map('strtolower', $this->csvReader->fetchOne());
+        $this->csvReader = Reader::createFromPath($this->csvFile)
+            ->setDelimiter($this->delimiter)
+            ->setEnclosure($this->enclosure)
+            ->setEscape($this->escape)
+            ->setNewline($this->newline);
+
+        $this->headers = array_map('strtolower', $this->csvReader->fetchOne());
+    }
+
+    /**
+     * @return void
+     */
+    protected function resetReader()
+    {
+        if ($this->exists()) {
+            $this->setReader();
+        }
     }
 
     /**
@@ -1267,21 +1362,18 @@ abstract class BaseCsvImporter
      */
     protected static function filterName($type, $filter, $name)
     {
-        $name = (is_string($name)) ? $name : (new \ReflectionClass($filter))->getShortName();
-
-        return static::checkFilterName($type, $name);
+        return static::checkFilterName($type, (is_string($name)) ? $name : (string)$filter);
     }
 
     /**
      * @param string $type
      * @param null $name
-     * @param null $counter
+     * @param int $counter
      * @return string
      */
-    protected static function checkFilterName($type, $name = null, $counter = null)
+    protected static function checkFilterName($type, $name, $counter = 1)
     {
-        $name       = $name ?: 'filter';
-        $filterName = $name . ((is_int($counter)) ? '_' . $counter : '');
+        $filterName = $name . (($counter > 1) ? '_' . $counter : '');
 
         if (call_user_func([static::class, $type . 'FilterExists'], $filterName)) {
             return static::checkFilterName($type, $name, ++$counter);

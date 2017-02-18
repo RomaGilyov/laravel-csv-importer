@@ -36,8 +36,30 @@ return array(
     'memory_limit' => 128,
     
     'import_lock_key' => null, // if it set to `false` (null, 0, false, '') value then it will be `static::class`
-    
-    'encoding' => 'UTF-8',
+
+    /*
+     * Encoding of given csv file
+     */
+    'input_encoding' => 'UTF-8',
+
+    /*
+     * Encoding of processed csv values
+     */
+    'output_encoding' => 'UTF-8',
+
+    'delimiter' => ',',
+
+    'enclosure' => '"',
+
+    /*
+     * Warning: The library depends on PHP SplFileObject class.
+     * Since this class exhibits a reported bug (https://bugs.php.net/bug.php?id=55413),
+     * Data using the escape character are correctly
+     * escaped but the escape character is not removed from the CSV content.
+     */
+    'escape' => '\\',
+
+    'newline' => "\n",
 
     /*
     |--------------------------------------------------------------------------

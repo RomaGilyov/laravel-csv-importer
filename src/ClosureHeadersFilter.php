@@ -20,7 +20,7 @@ class ClosureHeadersFilter extends BaseHeadersFilter
      * @param array $csvHeaders
      * @return bool
      */
-    protected function filter(array $csvHeaders)
+    public function filter(array $csvHeaders)
     {
         return $this->closure->__invoke($csvHeaders);
     }
