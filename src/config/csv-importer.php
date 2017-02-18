@@ -14,8 +14,6 @@ return array(
     | `memory_limit` - if you want store all csv values in memory or something like that,
     |   you may increase amount of memory for the script
     |
-    | `artifact` - array of values which will be truncated from every string value from given csv
-    |
     | `import_lock_key` - global import key which is basically `primary key of import`, from the key will be created
     |   all others cache keys for the import, by concatenation:
     |
@@ -36,8 +34,6 @@ return array(
     'mutex_lock_time' => 300,
     
     'memory_limit' => 128,
-    
-    'artifacts' => [],
     
     'import_lock_key' => null, // if it set to `false` (null, 0, false, '') value then it will be `static::class`
     

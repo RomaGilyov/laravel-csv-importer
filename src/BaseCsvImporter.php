@@ -172,11 +172,6 @@ abstract class BaseCsvImporter
     protected $progressFinishedKey;
 
     /**
-     * @var array
-     */
-    protected $artifacts = [];
-
-    /**
      * @var bool
      */
     protected $csvDateFormat = false;
@@ -189,7 +184,6 @@ abstract class BaseCsvImporter
         $this->baseConfig    = $this->getBaseConfig();
 
         $this->mutexLockTime = $this->getConfigProperty('mutex_lock_time', 300, 'integer');
-        $this->artifacts     = $this->getConfigProperty('artifacts', [], 'array');
         $this->importLockKey = $this->getConfigProperty('import_lock_key', static::class, 'string');
         $this->ourEncoding   = $this->getConfigProperty('encoding', 'UTF-8', 'string');
         $this->fileEncoding  = $this->getConfigProperty('encoding', 'UTF-8', 'string');
@@ -727,23 +721,12 @@ abstract class BaseCsvImporter
         foreach ($item as $key => &$value) {
             if (is_string($value) && !is_numeric($value)) {
                 if ($defaultEncoding != $fileEncoding) {
-                    $item[$key] = $this->trimArtifacts(iconv($this->fileEncoding, $this->ourEncoding, $value));
-                } else {
-                    $item[$key] = $this->trimArtifacts($value);
+                    $item[$key] = iconv($this->fileEncoding, $this->ourEncoding, $value);
                 }
             }
         }
 
         return $item;
-    }
-
-    /**
-     * @param $value
-     * @return string
-     */
-    protected function trimArtifacts($value)
-    {
-        return trim(urldecode(preg_replace('/(' . implode('|', $this->artifacts) . ')/', ' ', urlencode($value))));
     }
 
     /**

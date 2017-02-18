@@ -7,7 +7,7 @@
     },
     "require": {
         "php": ">=5.5.9",
-        "arvenil/ninja-mutex": "*",
+        "arvenil/ninja-mutex": "0.6.0",
         "league/csv": "8.0",
         "illuminate/validation": "~4.2|^5",
         "illuminate/config": "~4.2|^5",
