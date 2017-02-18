@@ -206,7 +206,8 @@ abstract class BaseCsvImporter
         $this->delimiter      = $this->getConfigProperty('delimiter', ',', 'string');
         $this->enclosure      = $this->getConfigProperty('enclosure', '"', 'string');
         $this->escape         = $this->getConfigProperty('escape', '\\', 'string');
-        $this->newline        = $this->getConfigProperty('newline', "\n", 'string');
+        $this->newline        = $this->getConfigProperty('newline', '', 'string');
+        $this->csvDateFormat  = $this->getConfigProperty('csv_date_format', null, 'string');
 
         $this->config         = $this->csvConfigurations();
         $this->csvWriters     = collect([]);
@@ -964,8 +965,9 @@ abstract class BaseCsvImporter
             case 'boolean':
                 return (bool) $value;
             case 'date':
-            case 'datetime':
                 return $this->toDate($value);
+            case 'datetime':
+                return $this->toDateTime($value);
             case 'array':
                 return (array)$value;
             default:
@@ -977,13 +979,27 @@ abstract class BaseCsvImporter
      * @param $date
      * @return string
      */
+    public function toDateTime($date)
+    {
+        return $this->formatDate($date)->toDateTimeString();
+    }
+
+    /**
+     * @param $date
+     * @return string
+     */
     public function toDate($date)
     {
-        if ($this->csvDateFormat) {
-            return $this->withDateFormat($date);
-        }
+        return $this->formatDate($date)->toDateString();
+    }
 
-        return $this->withoutDateFormat($date);
+    /**
+     * @param $date
+     * @return Carbon
+     */
+    public function formatDate($date)
+    {
+        return ($this->csvDateFormat) ? $this->withDateFormat($date) : $this->withoutDateFormat($date);
     }
 
     /**
@@ -993,9 +1009,9 @@ abstract class BaseCsvImporter
     protected function withDateFormat($date)
     {
         try {
-            return Carbon::createFromFormat($this->csvDateFormat, $date)->toDateString();
+            return Carbon::createFromFormat($this->csvDateFormat, $date);
         } catch (\Exception $e) {
-            return '0001-01-01';
+            return $this->dummyCarbonDate();
         }
     }
 
@@ -1005,21 +1021,19 @@ abstract class BaseCsvImporter
      */
     protected function withoutDateFormat($date)
     {
-        $date = trim(preg_replace('/(\/|\\\|\||\.|\,)/', '-', $date));
-
-        $zeroDate = '0001-01-01';
-
-        if (!$date || ($date == $zeroDate)) {
-            return $zeroDate;
-        }
-
         try {
-            $formattedDate = Carbon::parse($date)->toDateString();
+            return Carbon::parse(trim(preg_replace('/(\/|\\\|\||\.|\,)/', '-', $date)));
         } catch (\Exception $e) {
-            $formattedDate = $zeroDate;
+            return $this->dummyCarbonDate();
         }
+    }
 
-        return $formattedDate;
+    /**
+     * @return Carbon
+     */
+    protected function dummyCarbonDate()
+    {
+        return Carbon::createFromFormat('yyyy-mm-dd', '0001-01-01');
     }
 
     /**
