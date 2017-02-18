@@ -47,6 +47,15 @@ return array(
      */
     'output_encoding' => 'UTF-8',
 
+    /*
+     * Specify which date format the given csv file has
+     * to use `date` ('Y-m-d') and `datetime` ('Y-m-d H:i:s') casters,
+     * if the parameter will be set to `null` `date` caster will replace
+     * `/` and `\` and `|` and `.` and `,` on `-` and will assume that
+     * the given csv has `Y-m-d` date format
+     */
+    'csv_date_format' => 'Y-m-d',
+
     'delimiter' => ',',
 
     'enclosure' => '"',

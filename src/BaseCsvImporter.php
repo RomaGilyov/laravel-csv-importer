@@ -520,7 +520,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * Specify date format that contains your csv file, yyyy-mm-dd by default
+     * Specify date format that contains your csv file, `Y-m-d` by default
      *
      * @param $format
      * @return $this
@@ -1004,7 +1004,7 @@ abstract class BaseCsvImporter
 
     /**
      * @param $date
-     * @return string
+     * @return Carbon
      */
     protected function withDateFormat($date)
     {
@@ -1017,7 +1017,7 @@ abstract class BaseCsvImporter
 
     /**
      * @param $date
-     * @return string
+     * @return Carbon
      */
     protected function withoutDateFormat($date)
     {
