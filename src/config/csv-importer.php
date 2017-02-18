@@ -7,25 +7,14 @@ return array(
     | Main csv import configuration
     |-------------------------------------------------------------------------- 
     |
-    | `mutex_lock_time` - how long script will be executed and how long the import process will be locked,
-    |   another words if we will import list of electric guitars we won't be able to run another import of electric
-    |   guitars at the same time, to avoid duplicates and different sorts of incompatibilities. The value set in minutes.
+    | `mutex_lock_time` - how long script will be executed and how long
+    |   the import process will be locked, another words if we will import
+    |   list of electric guitars we won't be able to run another import of electric
+    |   guitars at the same time, to avoid duplicates and different sorts of
+    |   incompatibilities. The value set in minutes.
     |
     | `memory_limit` - if you want store all csv values in memory or something like that,
     |   you may increase amount of memory for the script
-    |
-    | `import_lock_key` - global import key which is basically `primary key of import`, from the key will be created
-    |   all others cache keys for the import, by concatenation:
-    |
-    |   'import_lock_key' . '_paths'
-    |   'import_lock_key' . '_quantity'
-    |   'import_lock_key' . '_processed'
-    |   'import_lock_key' . '_message'
-    |   'import_lock_key' . '_cancel'
-    |   'import_lock_key' . '_details'
-    |   'import_lock_key' . '_finished'
-    |
-    |   By default `import_lock_key` set to the import class name `static::class`
     |
     | `encoding` - which encoding we have, UTF-8 by default  
     |
@@ -34,8 +23,6 @@ return array(
     'mutex_lock_time' => 300,
     
     'memory_limit' => 128,
-    
-    'import_lock_key' => null, // if it set to `false` (null, 0, false, '') value then it will be `static::class`
 
     /*
      * Encoding of given csv file
@@ -52,7 +39,7 @@ return array(
      * to use `date` ('Y-m-d') and `datetime` ('Y-m-d H:i:s') casters,
      * if the parameter will be set to `null` `date` caster will replace
      * `/` and `\` and `|` and `.` and `,` on `-` and will assume that
-     * the given csv has `Y-m-d` date format
+     * the given csv file has `Y-m-d` or `d-m-Y` date format
      */
     'csv_date_format' => 'Y-m-d',
 

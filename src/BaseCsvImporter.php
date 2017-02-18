@@ -197,9 +197,9 @@ abstract class BaseCsvImporter
     public function __construct()
     {
         $this->baseConfig     = $this->getBaseConfig();
+        $this->importLockKey  = $this->setMutexLockKey();
 
         $this->mutexLockTime  = $this->getConfigProperty('mutex_lock_time', 300, 'integer');
-        $this->importLockKey  = $this->getConfigProperty('import_lock_key', static::class, 'string');
         $this->outputEncoding = $this->getConfigProperty('output_encoding', 'UTF-8', 'string');
         $this->inputEncoding  = $this->getConfigProperty('input_encoding', 'UTF-8', 'string');
 
@@ -259,7 +259,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * We need to always reset keys after mutes key concatenation or key changes
+     * Always reset keys after mutes key concatenation or key changes
      *
      * @return void
      */
@@ -273,6 +273,14 @@ abstract class BaseCsvImporter
         $this->progressDetailsKey           = $this->importLockKey . '_details';
         $this->progressFinishedKey          = $this->importLockKey . '_finished';
         $this->setMutex();
+    }
+
+    /**
+     * @return mixed
+     */
+    protected function setMutexLockKey()
+    {
+        return static::class;
     }
 
     /*
@@ -841,23 +849,25 @@ abstract class BaseCsvImporter
     {
         if (isset($this->config['csv_files'])) {
             $paths = [];
-            foreach ($this->config['csv_files'] as $key => $path) {
+            foreach ($this->config['csv_files'] as $csvFileKeyName => $path) {
                 if (\Storage::exists($path)) {
-                    $now  = Carbon::now();
-                    $time = "_" . $now->hour . "_" . $now->minute . "_" . $now->second . "_";
+                    $time = "_" . Carbon::now()->toTimeString() . "_";
                     $path = (substr_count($path, '.') === 1) ? strtr($path, ".", $time.'.') : ($path . $time);
                 }
 
                 \Storage::put($path, '');
 
                 $this->csvWriters->put(
-                    $key,
+                    $csvFileKeyName,
                     Writer::createFromPath($path)
                         ->setDelimiter($this->delimiter)
+                        ->setEnclosure($this->enclosure)
+                        ->setEscape($this->escape)
+                        ->setNewline($this->newline)
                         ->insertOne(implode($this->delimiter, $this->headers))
                 );
 
-                $paths[$key] = $path;
+                $paths[$csvFileKeyName] = $path;
             }
 
             $this->cache->forever($this->importPathsKey, $paths);
