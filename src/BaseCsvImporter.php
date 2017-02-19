@@ -18,7 +18,7 @@ use NinjaMutex\Mutex;
 
 abstract class BaseCsvImporter
 {
-    use CsvImporterConfigurationTrait;
+    use CsvImporterConfigurationTrait, NameableTrait;
 
     /**
      * If a header has `validation` array inside configuration array
@@ -189,7 +189,7 @@ abstract class BaseCsvImporter
     /**
      * @var bool
      */
-    protected $csvDateFormat = false;
+    protected $csvDateFormat;
 
     /**
      * BaseCsvImporter constructor.
@@ -197,16 +197,16 @@ abstract class BaseCsvImporter
     public function __construct()
     {
         $this->baseConfig     = $this->getBaseConfig();
-        $this->importLockKey  = $this->setMutexLockKey();
+        $this->importLockKey  = $this->filterMutexLockKey();
 
         $this->mutexLockTime  = $this->getConfigProperty('mutex_lock_time', 300, 'integer');
-        $this->outputEncoding = $this->getConfigProperty('output_encoding', 'UTF-8', 'string');
         $this->inputEncoding  = $this->getConfigProperty('input_encoding', 'UTF-8', 'string');
+        $this->outputEncoding = $this->getConfigProperty('output_encoding', 'UTF-8', 'string');
 
-        $this->delimiter      = $this->getConfigProperty('delimiter', ',', 'string');
-        $this->enclosure      = $this->getConfigProperty('enclosure', '"', 'string');
-        $this->escape         = $this->getConfigProperty('escape', '\\', 'string');
-        $this->newline        = $this->getConfigProperty('newline', '', 'string');
+        $this->delimiter      = $this->getConfigProperty('delimiter', ',');
+        $this->enclosure      = $this->getConfigProperty('enclosure', '"');
+        $this->escape         = $this->getConfigProperty('escape', '\\');
+        $this->newline        = $this->getConfigProperty('newline', '');
         $this->csvDateFormat  = $this->getConfigProperty('csv_date_format', null, 'string');
 
         $this->config         = $this->csvConfigurations();
@@ -273,6 +273,14 @@ abstract class BaseCsvImporter
         $this->progressDetailsKey           = $this->importLockKey . '_details';
         $this->progressFinishedKey          = $this->importLockKey . '_finished';
         $this->setMutex();
+    }
+
+    /**
+     * @return mixed
+     */
+    protected function filterMutexLockKey()
+    {
+        return preg_replace('/(\/|\\\)/', '', ($key = $this->setMutexLockKey()) ? $key : (string)($this));
     }
 
     /**
@@ -847,25 +855,29 @@ abstract class BaseCsvImporter
      */
     protected function setWriters()
     {
-        if (isset($this->config['csv_files'])) {
+        if (isset($this->config['csv_files']) && is_array($this->config['csv_files'])) {
             $paths = [];
             foreach ($this->config['csv_files'] as $csvFileKeyName => $path) {
                 if (\Storage::exists($path)) {
-                    $time = "_" . Carbon::now()->toTimeString() . "_";
-                    $path = (substr_count($path, '.') === 1) ? strtr($path, ".", $time.'.') : ($path . $time);
+                    $time = "_" . Carbon::now()->format('H_i_s') . "_";
+                    $path = (substr_count($path, '.') === 1) ? str_replace(".", $time.'.', $path) : ($path . $time);
                 }
 
                 \Storage::put($path, '');
 
-                $this->csvWriters->put(
-                    $csvFileKeyName,
-                    Writer::createFromPath($path)
-                        ->setDelimiter($this->delimiter)
-                        ->setEnclosure($this->enclosure)
-                        ->setEscape($this->escape)
-                        ->setNewline($this->newline)
-                        ->insertOne(implode($this->delimiter, $this->headers))
-                );
+                $storagePath = \Storage::disk(config('filesystem.default'))
+                        ->getDriver()
+                        ->getAdapter()
+                        ->getPathPrefix() . $path;
+
+                $writer = Writer::createFromPath($storagePath)
+                    ->setDelimiter($this->delimiter)
+                    ->setEnclosure($this->enclosure)
+                    ->setEscape($this->escape)
+                    ->setNewline($this->newline)
+                    ->insertOne(implode($this->delimiter, $this->headers));
+
+                $this->csvWriters->put($csvFileKeyName, $writer);
 
                 $paths[$csvFileKeyName] = $path;
             }
@@ -1256,7 +1268,7 @@ abstract class BaseCsvImporter
      * @param $name
      * @return null
      */
-    protected function getFilter($type, $name)
+    protected static function getFilter($type, $name)
     {
         return (static::filterExists($type, $name)) ? static::${$type . 'Filters'}[static::class][$name] : null;
     }

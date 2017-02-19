@@ -19,8 +19,8 @@ class DummyClass extends BaseCsvImporter
                 'email' => ['validation' => ['email'], 'cast' => 'string']
             ],
             'csv_files' => [
-                'valid_entities'   => storage_path('import/valid_entities.csv'),
-                'invalid_entities' => storage_path('import/invalid_entities.csv'),
+                'valid_entities'   => 'import/valid_entities.csv',
+                'invalid_entities' => 'import/invalid_entities.csv',
             ]
         ];
     }

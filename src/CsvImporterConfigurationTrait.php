@@ -8,13 +8,10 @@ trait CsvImporterConfigurationTrait
      * Get the Csv importer config
      *
      * @param string $key the configuration key
-     * @param string $prefix filename of configuration file
      * @return array configuration
      */
-    public function getBaseConfig($key = 'config', $prefix = 'csv-importer')
+    public function getBaseConfig($key = 'csv-importer')
     {
-        $key = $prefix . ($key ? '.' : '') . $key;
-
         if (function_exists('config')) {
             // Get config helper for Laravel 5.1+
             $configHelper = config();
