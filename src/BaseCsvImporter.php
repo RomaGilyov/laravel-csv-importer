@@ -5,6 +5,7 @@ namespace RGilyov\CsvImporter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use RGilyov\CsvImporter\Exceptions\CsvImporterException;
 use \Carbon\Carbon;
 use Illuminate\Cache\FileStore;
@@ -17,6 +18,7 @@ use League\Csv\Reader;
 use NinjaMutex\Lock\FlockLock;
 use NinjaMutex\Lock\MemcachedLock;
 use NinjaMutex\Lock\PredisRedisLock;
+use \Predis\Client as PredisClient;
 use NinjaMutex\Mutex;
 
 abstract class BaseCsvImporter
@@ -283,7 +285,7 @@ abstract class BaseCsvImporter
      */
     protected function filterMutexLockKey()
     {
-        return preg_replace('/(\/|\\\)/', '', ($key = $this->setMutexLockKey()) ? $key : (string)($this));
+        return Str::slug(($key = $this->setMutexLockKey()) ? $key : (string)($this), '_');
     }
 
     /**
@@ -1543,7 +1545,8 @@ abstract class BaseCsvImporter
         $cacheStore = $this->cache->getStore();
 
         if ($cacheStore instanceof RedisStore) {
-            return $this->initMutex(new PredisRedisLock($cacheStore->connection()));
+            $client = (($client = $cacheStore->connection()) instanceof PredisClient) ? $client : $client->client(null);
+            return $this->initMutex(new PredisRedisLock($client));
         }
 
         if ($cacheStore instanceof MemcachedStore) {

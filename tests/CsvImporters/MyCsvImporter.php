@@ -7,6 +7,13 @@ use RGilyov\CsvImporter\BaseCsvImporter;
 class MyCsvImporter extends BaseCsvImporter
 {
     /**
+     * We need to provide some time to test
+     *
+     * @var bool
+     */
+    protected $asyncMode = false;
+
+    /**
      *  Specify mappings and rules for our csv, we also may create csv files when we can write csv entities
      *
      * @return array
@@ -20,10 +27,21 @@ class MyCsvImporter extends BaseCsvImporter
                 'company'       => ['validation' => ['string'], 'cast' => 'super_caster']
             ],
             'csv_files' => [
-                'valid_entities'   => '/import/valid_entities.csv',
-                'invalid_entities' => '/import/invalid_entities.csv',
+                'valid_entities'   => '/valid_entities.csv',
+                'invalid_entities' => '/invalid_entities.csv',
             ]
         ];
+    }
+
+    /**
+     * @param $mode
+     * @return $this
+     */
+    public function setAsyncMode($mode)
+    {
+        $this->asyncMode = $mode;
+
+        return $this;
     }
 
     /**
@@ -35,6 +53,10 @@ class MyCsvImporter extends BaseCsvImporter
      */
     public function handle($item)
     {
+        if ($this->asyncMode) {
+            sleep(1);
+        }
+
         $this->insertTo('valid_entities', $item);
     }
 
