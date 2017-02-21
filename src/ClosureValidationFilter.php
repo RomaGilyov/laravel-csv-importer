@@ -8,6 +8,11 @@ class ClosureValidationFilter extends BaseValidationFilter
     protected $closure;
 
     /**
+     * @var string
+     */
+    protected $name = 'filter';
+
+    /**
      * ClosureValidationFilter constructor.
      * @param \Closure $closure
      */

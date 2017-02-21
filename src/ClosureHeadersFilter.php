@@ -8,6 +8,11 @@ class ClosureHeadersFilter extends BaseHeadersFilter
     protected $closure;
 
     /**
+     * @var string
+     */
+    protected $name = 'filter';
+
+    /**
      * ClosureHeadersFilter constructor.
      * @param \Closure $closure
      */

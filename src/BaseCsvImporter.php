@@ -2,6 +2,9 @@
 
 namespace RGilyov\CsvImporter;
 
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use RGilyov\CsvImporter\Exceptions\CsvImporterException;
 use \Carbon\Carbon;
 use Illuminate\Cache\FileStore;
@@ -125,7 +128,7 @@ abstract class BaseCsvImporter
     protected $mutexLockTime;
 
     /**
-     * @var \Cache
+     * @var Cache
      */
     protected $cache;
 
@@ -621,35 +624,10 @@ abstract class BaseCsvImporter
             return true;
         });
 
-        return $quantity;
-    }
-
-    /**
-     * @return bool
-     */
-    public function exists()
-    {
-        return ( bool )$this->csvFile;
-    }
-
-    /**
-     * Insert an item (csv line) to a file from `csv_files` configuration array
-     *
-     * @param $fileName
-     * @param $item
-     * @return mixed
-     * @throws CsvImporterException
-     */
-    public function insertTo($fileName, $item)
-    {
-        if (isset($this->csvWriters[$fileName])) {
-            return $this->csvWriters[$fileName]->insertOne($item);
-        }
-
-        throw new CsvImporterException(
-            ['message' => $fileName . ' file was not found, please check `csv_files` paths inside your configurations'],
-            400
-        );
+        /*
+         * -- to exclude headers line
+         */
+        return --$quantity;
     }
 
     /*
@@ -717,6 +695,34 @@ abstract class BaseCsvImporter
     public function getProgress()
     {
         return $this->progressBar();
+    }
+
+    /**
+     * @return bool
+     */
+    public function exists()
+    {
+        return ( bool )$this->csvFile;
+    }
+
+    /**
+     * Insert an item (csv line) to a file from `csv_files` configuration array
+     *
+     * @param $fileName
+     * @param $item
+     * @return mixed
+     * @throws CsvImporterException
+     */
+    public function insertTo($fileName, $item)
+    {
+        try {
+            return $this->csvWriters[$fileName]->insertOne($item);
+        } catch (\Exception $e) {
+            throw new CsvImporterException(
+                ['message' => $fileName . ' file was not found, please check `csv_files` paths inside your configurations'],
+                400
+            );
+        }
     }
 
     /*
@@ -858,19 +864,16 @@ abstract class BaseCsvImporter
         if (isset($this->config['csv_files']) && is_array($this->config['csv_files'])) {
             $paths = [];
             foreach ($this->config['csv_files'] as $csvFileKeyName => $path) {
-                if (\Storage::exists($path)) {
-                    $time = "_" . Carbon::now()->format('H_i_s') . "_";
+                if (Storage::exists($path)) {
+                    $time = "_" . Carbon::now()->format('Y_M_D_\a\t_H_i') . "_";
                     $path = (substr_count($path, '.') === 1) ? str_replace(".", $time.'.', $path) : ($path . $time);
                 }
 
-                \Storage::put($path, '');
+                Storage::put($path, '');
 
-                $storagePath = \Storage::disk(config('filesystem.default'))
-                        ->getDriver()
-                        ->getAdapter()
-                        ->getPathPrefix() . $path;
+                $path = $this->concatenatePath(Storage::disk()->getDriver()->getAdapter()->getPathPrefix(), $path);
 
-                $writer = Writer::createFromPath($storagePath)
+                $writer = Writer::createFromPath($path)
                     ->setDelimiter($this->delimiter)
                     ->setEnclosure($this->enclosure)
                     ->setEscape($this->escape)
@@ -884,6 +887,16 @@ abstract class BaseCsvImporter
 
             $this->cache->forever($this->importPathsKey, $paths);
         }
+    }
+
+    /**
+     * @param $firstPart
+     * @param $lastPart
+     * @return string
+     */
+    protected function concatenatePath($firstPart, $lastPart)
+    {
+        return rtrim($firstPart, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($lastPart, DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -1096,7 +1109,7 @@ abstract class BaseCsvImporter
      */
     protected function passes(array $item, array $validationRules)
     {
-        return \Validator::make($item, $validationRules)->passes();
+        return Validator::make($item, $validationRules)->passes();
     }
     
 
@@ -1614,7 +1627,7 @@ abstract class BaseCsvImporter
     /**
      * @return array
      */
-    protected function progressBar()
+    private function progressBar()
     {
         $progress = $this->getProgressDetails();
 
@@ -1641,7 +1654,6 @@ abstract class BaseCsvImporter
                 'meta' => ["finished" => false, 'init' => false, 'running' => true]
             ];
         } else {
-
             $data = [
                 'data' => ["message"  => $progress->message],
                 'meta' => [
@@ -1654,8 +1666,8 @@ abstract class BaseCsvImporter
                 ]
             ];
 
-            if ($this->progressBarDetails()) {
-                $data['data']['details'] = $this->progressBarDetails();
+            if ($details = $this->progressBarDetails()) {
+                $data['data']['details'] = $details;
             }
 
             return $data;
@@ -1666,7 +1678,7 @@ abstract class BaseCsvImporter
      * @return array
      * @throws CsvImporterException
      */
-    protected function finishProgressDetails()
+    private function finishProgressDetails()
     {
         $progress = $this->getProgressDetails();
 
@@ -1691,7 +1703,7 @@ abstract class BaseCsvImporter
     /**
      * @return object
      */
-    protected function getProgressDetails()
+    private function getProgressDetails()
     {
         return ( object ) [
             'processed'          => $this->cache->get($this->progressCacheKey),

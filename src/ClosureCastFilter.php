@@ -8,6 +8,11 @@ class ClosureCastFilter extends BaseCastFilter
     protected $closure;
 
     /**
+     * @var string
+     */
+    protected $name = 'filter';
+
+    /**
      * ClosureCastFilter constructor.
      * @param \Closure $closure
      */
