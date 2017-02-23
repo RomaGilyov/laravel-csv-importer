@@ -4,15 +4,8 @@ namespace RGilyov\CsvImporter\Test\CsvImporters;
 
 use RGilyov\CsvImporter\BaseCsvImporter;
 
-class MyCsvImporter extends BaseCsvImporter
+class CsvImporter extends BaseCsvImporter
 {
-    /**
-     * We need to provide some time to test
-     *
-     * @var bool
-     */
-    protected $asyncMode = false;
-
     /**
      *  Specify mappings and rules for our csv, we also may create csv files when we can write csv entities
      *
@@ -34,17 +27,6 @@ class MyCsvImporter extends BaseCsvImporter
     }
 
     /**
-     * @param $mode
-     * @return $this
-     */
-    public function setAsyncMode($mode)
-    {
-        $this->asyncMode = $mode;
-
-        return $this;
-    }
-
-    /**
      *  Will be executed for a csv line if it passes validation
      *
      * @param $item
@@ -53,10 +35,6 @@ class MyCsvImporter extends BaseCsvImporter
      */
     public function handle($item)
     {
-        if ($this->asyncMode) {
-            sleep(1);
-        }
-
         $this->insertTo('valid_entities', $item);
     }
 

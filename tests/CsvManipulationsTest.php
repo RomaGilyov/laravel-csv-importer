@@ -1,12 +1,14 @@
 <?php
 
+namespace RGilyov\CsvImporter\Test;
+
 use Orchestra\Testbench\TestCase;
-use RGilyov\CsvImporter\Test\CsvImporters\MyCsvImporter;
+use RGilyov\CsvImporter\Test\CsvImporters\CsvImporter;
 
 class CsvManipulationsTest extends BaseTestCase
 {
     /**
-     * @var MyCsvImporter
+     * @var CsvImporter
      */
     protected $importer;
 
@@ -14,7 +16,7 @@ class CsvManipulationsTest extends BaseTestCase
     {
         parent::setUp();
 
-        $this->importer = (new MyCsvImporter())->setFile(__DIR__.'/files/guitars.csv');
+        $this->importer = (new CsvImporter())->setFile(__DIR__.'/files/guitars.csv');
     }
 
     /** @test */
@@ -31,6 +33,7 @@ class CsvManipulationsTest extends BaseTestCase
         $distinct = $this->importer->distinct('title');
 
         $this->assertEquals('TAM100 Tosin Abasi Signature', $distinct[1]);
+        $this->assertEquals(10, count($distinct));
     }
 
     /** @test */

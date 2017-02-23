@@ -1,5 +1,7 @@
 <?php
 
+namespace RGilyov\CsvImporter\Test;
+
 use Orchestra\Testbench\TestCase;
 
 abstract class BaseTestCase extends TestCase
@@ -27,7 +29,8 @@ abstract class BaseTestCase extends TestCase
      */
     protected function getEnvironmentSetUp($app)
     {
-        $app['config']->set('cache.default', 'file');
+        $app['config']->set('cache.default', 'redis');
+        $app['config']->set('queue.default', 'redis');
         $app['config']->set('cache.stores.file', [
             'driver' => 'file',
             'path'   => $this->cachePath,

@@ -738,11 +738,11 @@ abstract class BaseCsvImporter
      */
     protected function tryStart()
     {
-        if (!$this->exists()) {
-            return false;
-        }
+        if (!$this->isLocked() && !$this->isFinished()) {
+            if (!$this->exists()) {
+                return false;
+            }
 
-        if (!$this->isLocked() || !$this->isFinished()) {
             $this->lock();
 
             $this->initialize();
@@ -1660,8 +1660,8 @@ abstract class BaseCsvImporter
             $data = [
                 'data' => ["message"  => $progress->message],
                 'meta' => [
-                    'processed'  => $progress->processed,
-                    'remains'    => $progress->quantity - $progress->processed,
+                    'processed'  => ( int )$progress->processed,
+                    'remains'    => ( int )$progress->quantity - $progress->processed,
                     'percentage' => floor(($progress->processed / ($progress->quantity / 100))),
                     'finished'   => false,
                     'init'       => false,
