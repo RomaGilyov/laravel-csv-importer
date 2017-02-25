@@ -10,6 +10,8 @@ abstract class BaseTestCase extends TestCase
 
     protected $filesPath = __DIR__ . DIRECTORY_SEPARATOR .'files' . DIRECTORY_SEPARATOR . 'import';
 
+    protected $cacheDriver = 'file';
+
     /**
      * @param \Illuminate\Foundation\Application $app
      * @return array
@@ -29,7 +31,7 @@ abstract class BaseTestCase extends TestCase
      */
     protected function getEnvironmentSetUp($app)
     {
-        $app['config']->set('cache.default', 'redis');
+        $app['config']->set('cache.default', $this->cacheDriver);
         $app['config']->set('queue.default', 'redis');
         $app['config']->set('cache.stores.file', [
             'driver' => 'file',
@@ -41,6 +43,11 @@ abstract class BaseTestCase extends TestCase
             'root'   => $this->filesPath,
         ]);
     }
+
+    /**
+     * @return string
+     */
+    protected function setCacheDriver(){}
 
     public function tearDown()
     {

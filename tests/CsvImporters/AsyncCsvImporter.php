@@ -8,7 +8,7 @@ use RGilyov\CsvImporter\BaseCsvImporter;
 class AsyncCsvImporter extends BaseCsvImporter
 {
     /**
-     * We need to provide some time to test
+     * We need to provide some time to tests
      *
      * @var bool
      */
@@ -33,6 +33,11 @@ class AsyncCsvImporter extends BaseCsvImporter
      * @var string
      */
     public static $cacheFinalStageStartedKey = 'import_final_stage_started';
+
+    /**
+     * @var string
+     */
+    public static $cacheOnCancelKey = 'import_on_cancel';
 
     /**
      *  Specify mappings and rules for our csv, we also may create csv files when we can write csv entities
@@ -76,7 +81,7 @@ class AsyncCsvImporter extends BaseCsvImporter
     {
         if ($this->asyncMode) {
             sleep(1);
-            echo "I'm running";
+            echo "I'm running</br>" . PHP_EOL;
         }
 
         $this->insertTo('valid_entities', $item);
@@ -119,11 +124,22 @@ class AsyncCsvImporter extends BaseCsvImporter
     /**
      * @return void
      */
+    public function onCancel()
+    {
+        Cache::forever(AsyncCsvImporter::$cacheOnCancelKey, 'Hey there!');
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @return void
+     */
     public static function flushAsyncInfo()
     {
         Cache::forget(AsyncCsvImporter::$cacheInfoKey);
         Cache::forget(AsyncCsvImporter::$cacheStartedKey);
         Cache::forget(AsyncCsvImporter::$cacheInitFinishedKey);
         Cache::forget(AsyncCsvImporter::$cacheFinalStageStartedKey);
+        Cache::forget(AsyncCsvImporter::$cacheOnCancelKey);
     }
 }

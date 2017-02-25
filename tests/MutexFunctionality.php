@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 use Orchestra\Testbench\TestCase;
 use RGilyov\CsvImporter\Test\CsvImporters\AsyncCsvImporter;
 
-class MutexFunctionalityTest extends BaseTestCase
+class MutexFunctionality extends BaseTestCase
 {
     use \Illuminate\Foundation\Bus\DispatchesJobs;
 
@@ -20,8 +20,8 @@ class MutexFunctionalityTest extends BaseTestCase
         parent::setUp();
 
         $this->importer = (new AsyncCsvImporter())->setFile(__DIR__.'/files/guitars.csv');
-        $this->importer->clearSession();
 
+        $this->importer->clearSession();
         $this->importer->flushAsyncInfo();
 
         $this->dispatch(new \RGilyov\CsvImporter\Test\Jobs\TestImportJob());
@@ -43,7 +43,7 @@ class MutexFunctionalityTest extends BaseTestCase
     }
 
     /** @test */
-    public function it_can_lock_import_process()
+    public function it_can_import_and_lock_csv_import_process()
     {
         $initProgress         = $this->importer->getProgress();
 
@@ -96,6 +96,17 @@ class MutexFunctionalityTest extends BaseTestCase
         $this->assertTrue($finishedMessage['meta']['finished']);
         $this->assertFalse($finishedMessage['meta']['init']);
         $this->assertFalse($finishedMessage['meta']['running']);
+    }
+
+    /** @test */
+    public function it_can_cancel_import_process()
+    {
+        $this->importer->cancel();
+
+        $finishedMessage = $this->checkImportFinalResponse();
+
+        $this->assertEquals("Importing had canceled", json_decode($finishedMessage, true)['message']);
+        $this->assertEquals("Hey there!", Cache::get(AsyncCsvImporter::$cacheOnCancelKey));
     }
     
     /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +190,7 @@ class MutexFunctionalityTest extends BaseTestCase
      */
     protected function fuse($counter, $key)
     {
-        if ($counter > 30) {
+        if ($counter > 10) {
             throw new \Exception("Timeout error. Check your queue. Key: " . $key);
         }
     }

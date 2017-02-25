@@ -237,9 +237,9 @@ abstract class BaseCsvImporter
     {
         if (isset($this->baseConfig[$property]) && $this->baseConfig[$property]) {
             return (is_string($cast)) ? $this->castField($this->baseConfig[$property], $cast) : $this->baseConfig[$property];
-        } else {
-            return $default;
         }
+
+        return $default;
     }
 
     /**
@@ -1088,15 +1088,15 @@ abstract class BaseCsvImporter
     protected function validateItem(array $item)
     {
         if ($this->configMappingsExists()) {
-            $validatorRules = [];
+            $validationRules = [];
 
             foreach ($this->config['mappings'] as $field => $rules) {
                 if (isset($rules[self::VALIDATION]) && isset($item[$field])) {
-                    $validatorRules[$field] = $rules[self::VALIDATION];
+                    $validationRules[$field] = $rules[self::VALIDATION];
                 }
             }
 
-            if (!empty($validatorRules) && !$this->passes($item, $validatorRules)) {
+            if (!empty($validationRules) && !$this->passes($item, $validationRules)) {
                 return false;
             }
         }
@@ -1334,7 +1334,7 @@ abstract class BaseCsvImporter
      * @param $name
      * @return bool
      */
-    public static function ValidationFilterExists($name)
+    public static function validationFilterExists($name)
     {
         return static::filterExists(self::VALIDATION, $name);
     }
