@@ -385,7 +385,7 @@ abstract class BaseCsvImporter
      * @param $message
      * @param $quantity
      */
-    public function initProgressBar($message, $quantity)
+    protected function initProgressBar($message, $quantity)
     {
         $this->dropProgress();
         $this->setProgressMessage($message);

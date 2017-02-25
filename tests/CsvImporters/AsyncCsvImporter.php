@@ -40,6 +40,11 @@ class AsyncCsvImporter extends BaseCsvImporter
     public static $cacheOnCancelKey = 'import_on_cancel';
 
     /**
+     * @var string
+     */
+    public static $cacheCustomProgressBarKey = 'import_custom_progress_bar';
+
+    /**
      *  Specify mappings and rules for our csv, we also may create csv files when we can write csv entities
      *
      * @return array
@@ -122,6 +127,15 @@ class AsyncCsvImporter extends BaseCsvImporter
         $this->setFinalDetails('Buzz me Mulatto');
 
         sleep(5);
+
+        Cache::forever(AsyncCsvImporter::$cacheCustomProgressBarKey, true);
+
+        $this->initProgressBar('Custom progress bar', 5);
+
+        for ($i = 0; $i < 5; $i++) {
+            sleep(1);
+            $this->incrementProgress();
+        }
     }
 
     /**
@@ -152,5 +166,6 @@ class AsyncCsvImporter extends BaseCsvImporter
         Cache::forget(AsyncCsvImporter::$cacheInitFinishedKey);
         Cache::forget(AsyncCsvImporter::$cacheFinalStageStartedKey);
         Cache::forget(AsyncCsvImporter::$cacheOnCancelKey);
+        Cache::forget(AsyncCsvImporter::$cacheCustomProgressBarKey);
     }
 }

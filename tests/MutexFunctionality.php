@@ -62,6 +62,10 @@ class MutexFunctionality extends BaseTestCase
         $this->waitUntilFinalStage();
 
         $finalStageProgress   = $this->importer->getProgress();
+
+        $this->waitUntilCustomProgressBar();
+
+        $customProgress       = $this->importer->getProgress();
         
         $finishedMessage      = $this->checkImportFinalResponse();
 
@@ -93,6 +97,15 @@ class MutexFunctionality extends BaseTestCase
         $this->assertFalse($finalStageProgress['meta']['finished']);
         $this->assertFalse($finalStageProgress['meta']['init']);
         $this->assertTrue($finalStageProgress['meta']['running']);
+
+        $this->assertEquals('Custom progress bar', $customProgress['data']['message']);
+        $this->assertEquals('Sup Mello?', $customProgress['data']['details']);
+        $this->assertEquals('integer', gettype($customProgress['meta']['processed']));
+        $this->assertEquals('integer', gettype($customProgress['meta']['remains']));
+        $this->assertEquals('double', gettype($customProgress['meta']['percentage']));
+        $this->assertFalse($customProgress['meta']['finished']);
+        $this->assertFalse($customProgress['meta']['init']);
+        $this->assertTrue($customProgress['meta']['running']);
 
         $this->assertEquals(
             "Almost done, please click to the `finish` button to proceed",
@@ -176,6 +189,22 @@ class MutexFunctionality extends BaseTestCase
         $this->fuse($counter, AsyncCsvImporter::$cacheStartedKey);
 
         return $this->waitUntilStart(++$counter);
+    }
+
+    /**
+     * @param int $counter
+     * @return bool|mixed
+     * @throws \Exception
+     */
+    protected function waitUntilCustomProgressBar($counter = 0)
+    {
+        if (Cache::get(AsyncCsvImporter::$cacheCustomProgressBarKey)) {
+            return true;
+        }
+
+        $this->fuse($counter, AsyncCsvImporter::$cacheCustomProgressBarKey);
+
+        return $this->waitUntilCustomProgressBar(++$counter);
     }
 
     /**
