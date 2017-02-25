@@ -73,6 +73,7 @@ class MutexFunctionality extends BaseTestCase
         $this->assertTrue($initProgress['meta']['running']);
 
         $this->assertEquals('Import process is running', $progress['data']['message']);
+        $this->assertEquals('Sup Mello?', $progress['data']['details']);
         $this->assertEquals('integer', gettype($progress['meta']['processed']));
         $this->assertEquals('integer', gettype($progress['meta']['remains']));
         $this->assertEquals('double', gettype($progress['meta']['percentage']));
@@ -102,11 +103,12 @@ class MutexFunctionality extends BaseTestCase
         $this->assertFalse($finishedMessage['meta']['running']);
 
         $this->assertEquals("The import process successfully finished!", $finalInformation['data']['message']);
+        $this->assertEquals("Buzz me Mulatto", $finalInformation['data']['details']);
         $this->assertTrue($finalInformation['meta']['finished']);
         $this->assertFalse($finalInformation['meta']['init']);
         $this->assertFalse($finalInformation['meta']['running']);
-        $this->assertTrue(strpos($finalInformation['files']['valid_entities'], "valid_entities.csv") !== false);
-        $this->assertTrue(strpos($finalInformation['files']['invalid_entities'], "invalid_entities.csv") !== false);
+        $this->assertTrue(strpos($finalInformation['files']['valid_entities'], "valid_entities") !== false);
+        $this->assertTrue(strpos($finalInformation['files']['invalid_entities'], "invalid_entities") !== false);
     }
 
     /** @test */
@@ -118,6 +120,28 @@ class MutexFunctionality extends BaseTestCase
 
         $this->assertEquals("Importing had canceled", json_decode($finishedMessage, true)['message']);
         $this->assertEquals("Hey there!", Cache::get(AsyncCsvImporter::$cacheOnCancelKey));
+    }
+
+    /** @test */
+    public function it_can_concatenate_import_lock_key()
+    {
+        $finishedMessage  = $this->importer->concatMutexKey('unrelated_guitars')->run();
+        $finalInformation = $this->importer->finish();
+
+        $this->assertEquals(
+            "Almost done, please click to the `finish` button to proceed",
+            $finishedMessage['data']['message']
+        );
+        $this->assertTrue($finishedMessage['meta']['finished']);
+        $this->assertFalse($finishedMessage['meta']['init']);
+        $this->assertFalse($finishedMessage['meta']['running']);
+
+        $this->assertEquals("The import process successfully finished!", $finalInformation['data']['message']);
+        $this->assertTrue($finalInformation['meta']['finished']);
+        $this->assertFalse($finalInformation['meta']['init']);
+        $this->assertFalse($finalInformation['meta']['running']);
+        $this->assertTrue(strpos($finalInformation['files']['valid_entities'], "valid_entities") !== false);
+        $this->assertTrue(strpos($finalInformation['files']['invalid_entities'], "invalid_entities") !== false);
     }
     
     /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,8 +159,6 @@ class MutexFunctionality extends BaseTestCase
 
         $this->fuse($counter, AsyncCsvImporter::$cacheInfoKey);
 
-        sleep(1);
-
         return $this->checkImportFinalResponse(++$counter);
     }
 
@@ -152,8 +174,6 @@ class MutexFunctionality extends BaseTestCase
         }
 
         $this->fuse($counter, AsyncCsvImporter::$cacheStartedKey);
-
-        sleep(1);
 
         return $this->waitUntilStart(++$counter);
     }
@@ -171,8 +191,6 @@ class MutexFunctionality extends BaseTestCase
 
         $this->fuse($counter, AsyncCsvImporter::$cacheInitFinishedKey);
 
-        sleep(1);
-
         return $this->waitUntilEndOfInitialization(++$counter);
     }
 
@@ -189,8 +207,6 @@ class MutexFunctionality extends BaseTestCase
 
         $this->fuse($counter, AsyncCsvImporter::$cacheFinalStageStartedKey);
 
-        sleep(1);
-
         return $this->waitUntilFinalStage(++$counter);
     }
 
@@ -204,5 +220,7 @@ class MutexFunctionality extends BaseTestCase
         if ($counter > 10) {
             throw new \Exception("Timeout error. Check your queue. Key: " . $key);
         }
+
+        sleep(1);
     }
 }

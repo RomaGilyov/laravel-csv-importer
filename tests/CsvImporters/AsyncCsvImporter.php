@@ -77,7 +77,7 @@ class AsyncCsvImporter extends BaseCsvImporter
      * @throws \RGilyov\CsvImporter\Exceptions\CsvImporterException
      * @return void
      */
-    public function handle($item)
+    protected function handle($item)
     {
         if ($this->asyncMode) {
             sleep(1);
@@ -94,7 +94,7 @@ class AsyncCsvImporter extends BaseCsvImporter
      * @throws \RGilyov\CsvImporter\Exceptions\CsvImporterException
      * @return void
      */
-    public function invalid($item)
+    protected function invalid($item)
     {
         $this->insertTo('invalid_entities', $item);
     }
@@ -102,7 +102,7 @@ class AsyncCsvImporter extends BaseCsvImporter
     /**
      * @return void
      */
-    public function before()
+    protected function before()
     {
         Cache::forever(AsyncCsvImporter::$cacheStartedKey, true);
 
@@ -114,9 +114,12 @@ class AsyncCsvImporter extends BaseCsvImporter
     /**
      * @return void
      */
-    public function after()
+    protected function after()
     {
         Cache::forever(AsyncCsvImporter::$cacheFinalStageStartedKey, true);
+
+
+        $this->setFinalDetails('Buzz me Mulatto');
 
         sleep(5);
     }
@@ -124,9 +127,17 @@ class AsyncCsvImporter extends BaseCsvImporter
     /**
      * @return void
      */
-    public function onCancel()
+    protected function onCancel()
     {
         Cache::forever(AsyncCsvImporter::$cacheOnCancelKey, 'Hey there!');
+    }
+
+    /**
+     * @return string
+     */
+    public function progressBarDetails()
+    {
+        return 'Sup Mello?';
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////

@@ -174,6 +174,11 @@ abstract class BaseCsvImporter
     /**
      * @var string
      */
+    protected $progressFinalDetailsKey;
+
+    /**
+     * @var string
+     */
     protected $csvCountCacheKey;
 
     /**
@@ -276,6 +281,7 @@ abstract class BaseCsvImporter
         $this->progressMessageKey           = $this->importLockKey . '_message';
         $this->progressCancelKey            = $this->importLockKey . '_cancel';
         $this->progressDetailsKey           = $this->importLockKey . '_details';
+        $this->progressFinalDetailsKey      = $this->importLockKey . '_final_details';
         $this->progressFinishedKey          = $this->importLockKey . '_finished';
         $this->setMutex();
     }
@@ -318,7 +324,7 @@ abstract class BaseCsvImporter
      * @param $item
      * @return array
      */
-    public function handle($item)
+    protected function handle($item)
     {
 
     }
@@ -329,7 +335,7 @@ abstract class BaseCsvImporter
      * @param $item
      * @return array
      */
-    public function invalid($item)
+    protected function invalid($item)
     {
 
     }
@@ -339,7 +345,7 @@ abstract class BaseCsvImporter
      *
      * @return void
      */
-    public function before()
+    protected function before()
     {
 
     }
@@ -349,7 +355,7 @@ abstract class BaseCsvImporter
      *
      * @return void
      */
-    public function after()
+    protected function after()
     {
 
     }
@@ -359,16 +365,18 @@ abstract class BaseCsvImporter
      * useful when you have multiple imports for one import class at the same time
      *
      * @param $concat
-     * @return void
+     * @return static
      */
     public function concatMutexKey($concat)
     {
-        $this->importLockKey = $this->importLockKey . $concat;
+        $this->importLockKey = $this->importLockKey . '_' . $concat;
 
         /*
          * Important to reset all keys after concatenation due to all keys depends on `importLockKey`
          */
         $this->setKeys();
+        
+        return $this;
     }
 
     /**
@@ -399,15 +407,23 @@ abstract class BaseCsvImporter
      *
      * @param $details
      */
-    public function setFinishDetails($details)
+    public function setFinalDetails($details)
     {
-        $this->cache->forever($this->progressDetailsKey, $details);
+        $this->cache->forever($this->progressFinalDetailsKey, $details);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFinalDetails()
+    {
+        return $this->cache->get($this->progressFinalDetailsKey);
     }
 
     /**
      *  Will be executed during the import process canceling
      */
-    public function onCancel()
+    protected function onCancel()
     {
 
     }
@@ -418,7 +434,7 @@ abstract class BaseCsvImporter
      * @param array $data
      * @return array
      */
-    public function attachDataToCsvHeaders(array $data)
+    public function attachDataToConfiguredMappings(array $data)
     {
         $csvData = [];
         foreach ($this->headers as $value) {
@@ -716,7 +732,7 @@ abstract class BaseCsvImporter
     /**
      * @return array
      */
-    protected function tryStart()
+    private function tryStart()
     {
         if (!$this->isLocked() && !$this->isFinished()) {
             if (!$this->exists()) {
@@ -739,7 +755,7 @@ abstract class BaseCsvImporter
     /**
      * @return void
      */
-    protected function initialize()
+    private function initialize()
     {
         $this->isCanceled();
 
@@ -764,7 +780,7 @@ abstract class BaseCsvImporter
     /**
      * @return void
      */
-    protected function finalStage()
+    private function finalStage()
     {
         $this->isCanceled();
         $this->after();
@@ -780,6 +796,7 @@ abstract class BaseCsvImporter
         $this->cache->forget($this->csvCountCacheKey);
         $this->cache->forget($this->progressMessageKey);
         $this->cache->forget($this->progressDetailsKey);
+        $this->cache->forget($this->progressFinalDetailsKey);
         $this->cache->forget($this->progressCancelKey);
         $this->cache->forget($this->progressFinishedKey);
         $this->cache->forget($this->importPathsKey);
@@ -1692,8 +1709,8 @@ abstract class BaseCsvImporter
             'meta' => ["finished" => true, 'init' => false, 'running' => false]
         ];
 
-        if ($progress->details) {
-            $data['details'] = $progress->details;
+        if ($progress->final_details) {
+            $data['data']['details'] = $progress->final_details;
         }
 
         if ($progress->paths) {
@@ -1714,6 +1731,7 @@ abstract class BaseCsvImporter
             'message'            => $this->cache->get($this->progressMessageKey),
             'finished'           => $this->cache->get($this->progressFinishedKey),
             'details'            => $this->cache->get($this->progressDetailsKey),
+            'final_details'      => $this->cache->get($this->progressFinalDetailsKey),
             'paths'              => $this->cache->get($this->importPathsKey),
         ];
     }
