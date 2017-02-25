@@ -81,7 +81,7 @@ class AsyncCsvImporter extends BaseCsvImporter
     {
         if ($this->asyncMode) {
             sleep(1);
-            echo "I'm running</br>" . PHP_EOL;
+            echo "I'm running" . PHP_EOL;
         }
 
         $this->insertTo('valid_entities', $item);

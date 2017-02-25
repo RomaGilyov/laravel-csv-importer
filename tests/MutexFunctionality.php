@@ -2,13 +2,15 @@
 
 namespace RGilyov\CsvImporter\Test;
 
-use Illuminate\Support\Facades\Cache;
 use Orchestra\Testbench\TestCase;
+use Illuminate\Support\Facades\Cache;
+use \Illuminate\Foundation\Bus\DispatchesJobs;
+use \RGilyov\CsvImporter\Test\Jobs\TestImportJob;
 use RGilyov\CsvImporter\Test\CsvImporters\AsyncCsvImporter;
 
 class MutexFunctionality extends BaseTestCase
 {
-    use \Illuminate\Foundation\Bus\DispatchesJobs;
+    use DispatchesJobs;
 
     /**
      * @var AsyncCsvImporter
@@ -24,7 +26,7 @@ class MutexFunctionality extends BaseTestCase
         $this->importer->clearSession();
         $this->importer->flushAsyncInfo();
 
-        $this->dispatch(new \RGilyov\CsvImporter\Test\Jobs\TestImportJob());
+        $this->dispatch(new TestImportJob());
 
         /*
          * We need to wait till queue start import, in the separated process
@@ -43,7 +45,7 @@ class MutexFunctionality extends BaseTestCase
     }
 
     /** @test */
-    public function it_can_import_and_lock_csv_import_process()
+    public function it_can_import_and_lock_csv()
     {
         $initProgress         = $this->importer->getProgress();
 
@@ -62,6 +64,8 @@ class MutexFunctionality extends BaseTestCase
         $finalStageProgress   = $this->importer->getProgress();
         
         $finishedMessage      = $this->checkImportFinalResponse();
+
+        $finalInformation     = $this->importer->finish();
 
         $this->assertEquals('Initialization', $initProgress['data']['message']);
         $this->assertFalse($initProgress['meta']['finished']);
@@ -96,6 +100,13 @@ class MutexFunctionality extends BaseTestCase
         $this->assertTrue($finishedMessage['meta']['finished']);
         $this->assertFalse($finishedMessage['meta']['init']);
         $this->assertFalse($finishedMessage['meta']['running']);
+
+        $this->assertEquals("The import process successfully finished!", $finalInformation['data']['message']);
+        $this->assertTrue($finalInformation['meta']['finished']);
+        $this->assertFalse($finalInformation['meta']['init']);
+        $this->assertFalse($finalInformation['meta']['running']);
+        $this->assertTrue(strpos($finalInformation['files']['valid_entities'], "valid_entities.csv") !== false);
+        $this->assertTrue(strpos($finalInformation['files']['invalid_entities'], "invalid_entities.csv") !== false);
     }
 
     /** @test */

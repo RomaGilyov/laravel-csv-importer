@@ -10,8 +10,10 @@ class AppSetUp extends BaseTestCase
     /*
      * Make setUp method public
      */
-    public function setUp()
+    public function setUp($driver = null)
     {
+        $this->cacheDriver = $driver ?: 'file';
+
         parent::setUp();
     }
 }

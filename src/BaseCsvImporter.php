@@ -355,16 +355,6 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * Specify custom progress message during import process
-     *
-     * @param string $message
-     */
-    public function setProgressMessage($message)
-    {
-        $this->cache->put($this->progressMessageKey, $message, $this->mutexLockTime);
-    }
-
-    /**
      * You may change mutex key with concatenation,
      * useful when you have multiple imports for one import class at the same time
      *
@@ -379,16 +369,6 @@ abstract class BaseCsvImporter
          * Important to reset all keys after concatenation due to all keys depends on `importLockKey`
          */
         $this->setKeys();
-    }
-
-    /**
-     * Drop progress quantity
-     *
-     * @return void
-     */
-    public function dropProgress()
-    {
-        $this->cache->put($this->progressCacheKey, 0, $this->mutexLockTime);
     }
 
     /**
@@ -438,7 +418,7 @@ abstract class BaseCsvImporter
      * @param array $data
      * @return array
      */
-    public function toCsvFormat(array $data)
+    public function attachDataToCsvHeaders(array $data)
     {
         $csvData = [];
         foreach ($this->headers as $value) {
@@ -665,14 +645,14 @@ abstract class BaseCsvImporter
      */
     public function finish()
     {
-        if (!$this->isLocked() || !$this->isFinished()) {
+        if ($this->isLocked() && !$this->isFinished()) {
             return $this->progressBar();
         }
 
         /*
          * We need to get data before mutex unlocked and session cleared
          */
-        $data = $this->finishProgressDetails();
+        $data = $this->finalProgressDetails();
 
         $this->unlock();
 
@@ -907,7 +887,7 @@ abstract class BaseCsvImporter
      * @param array $item
      * @return array
      */
-    protected function getDefinedFields(array $item)
+    public function extractDefinedFields(array $item)
     {
         $configMappings = [];
 
@@ -1626,6 +1606,26 @@ abstract class BaseCsvImporter
     {
         $this->cache->forever($this->progressFinishedKey, true);
     }
+    
+    /**
+     * Drop progress quantity
+     *
+     * @return void
+     */
+    protected function dropProgress()
+    {
+        $this->cache->put($this->progressCacheKey, 0, $this->mutexLockTime);
+    }
+
+    /**
+     * Specify custom progress message during import process
+     *
+     * @param string $message
+     */
+    protected function setProgressMessage($message)
+    {
+        $this->cache->put($this->progressMessageKey, $message, $this->mutexLockTime);
+    }
 
     /**
      * @return array
@@ -1681,7 +1681,7 @@ abstract class BaseCsvImporter
      * @return array
      * @throws CsvImporterException
      */
-    private function finishProgressDetails()
+    private function finalProgressDetails()
     {
         $progress = $this->getProgressDetails();
 
@@ -1697,7 +1697,7 @@ abstract class BaseCsvImporter
         }
 
         if ($progress->paths) {
-            $data['files'] = $progress->path;
+            $data['files'] = $progress->paths;
         }
 
         return $data;
