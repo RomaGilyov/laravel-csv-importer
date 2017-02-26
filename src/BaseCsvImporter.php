@@ -428,22 +428,6 @@ abstract class BaseCsvImporter
 
     }
 
-    /**
-     * Transform any array to given csv headers
-     *
-     * @param array $data
-     * @return array
-     */
-    public function attachDataToConfiguredMappings(array $data)
-    {
-        $csvData = [];
-        foreach ($this->headers as $value) {
-            $csvData[$value] = (isset($data[$value])) ? $data[$value] : '';
-        }
-
-        return $csvData;
-    }
-
     /*
     |--------------------------------------------------------------------------
     | Setters
@@ -739,6 +723,38 @@ abstract class BaseCsvImporter
         }
     }
 
+    /**
+     * Extract any array values to given csv headers
+     *
+     * @param array $data
+     * @return array
+     */
+    public function toConfiguredHeaders(array $data)
+    {
+        if (!$this->exists()) {
+            return null;
+        }
+
+        $flip = array_map(function () {
+            return null;
+        }, array_flip($this->headers));
+
+        $common = array_intersect_key($data, $flip);
+
+        return array_merge($flip, $common);
+    }
+    /**
+     * Extract fields which is were specified inside `mappings` array in the configurations, from the given csv line
+     *
+     * @param array $item
+     * @return array
+     */
+    public function extractDefinedFields(array $item)
+    {
+        return ($this->configMappingsExists()) ? array_intersect_key($item, $this->config['mappings']) : [];
+    }
+
+
     /*
     |--------------------------------------------------------------------------
     | Main functionality
@@ -912,27 +928,6 @@ abstract class BaseCsvImporter
     protected function concatenatePath($firstPart, $lastPart)
     {
         return rtrim($firstPart, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . ltrim($lastPart, DIRECTORY_SEPARATOR);
-    }
-
-    /**
-     * Extract fields which is were specified inside `mappings` array in the configurations, from the given csv line
-     *
-     * @param array $item
-     * @return array
-     */
-    public function extractDefinedFields(array $item)
-    {
-        $configMappings = [];
-
-        if (isset($this->config['mappings']) && is_array($this->config['mappings'])) {
-            foreach ($this->config['mappings'] as $key => $value) {
-                if (isset($item[$key])) {
-                    $configMappings[$key] = $item[$key];
-                }
-            }
-        }
-
-        return $configMappings;
     }
 
     /**

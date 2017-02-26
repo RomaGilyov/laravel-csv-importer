@@ -17,7 +17,9 @@ class CsvImporter extends BaseCsvImporter
             'mappings' => [
                 'serial_number' => ['required', 'validation' => ['numeric'], 'cast' => 'string'],
                 'title'         => ['validation' => ['required'], 'cast' => ['string', 'lowercase']],
-                'company'       => ['validation' => ['string'], 'cast' => 'super_caster']
+                'company'       => ['validation' => ['string'], 'cast' => 'super_caster'],
+                'some_field_1'  => ['cast' => 'string'],
+                'some_field_2'  => []
             ],
             'csv_files' => [
                 'valid_entities'   => '/valid_entities.csv',

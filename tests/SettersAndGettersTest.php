@@ -8,7 +8,7 @@ use RGilyov\CsvImporter\Test\CsvImporters\CsvImporter;
 class SettersAndGettersTest extends BaseTestCase
 {
     /** @test */
-    public function setters_getters()
+    public function setters_and_getters()
     {
         $importer = (new CsvImporter())->setCsvDateFormat('y-m-d')
             ->setDelimiter('d')
@@ -43,5 +43,31 @@ class SettersAndGettersTest extends BaseTestCase
         $this->assertEquals('newline', $importer->newline);
         $this->assertEquals('newline', $importer->getNewline());
         $this->assertEquals('newline', $importer->GimmeFuelGimmeFireGimmeThatWhichIDesireExlamationMark('newline'));
+    }
+
+    /** @test */
+    public function it_can_transform_data_according_to_mappings()
+    {
+        $item = [
+            'title'        => 'title',
+            'some_field_1' => 'some_field_1',
+            'weird_one'    => 'weird'
+        ];
+
+        $extracted = (new CsvImporter())->extractDefinedFields($item);
+
+        $this->assertEquals('title', $extracted['title']);
+        $this->assertEquals('some_field_1', $extracted['some_field_1']);
+        $this->assertFalse(isset($extracted['weird_one']));
+
+        ////////////////////////////////////////////////////////////////
+
+        $attachedToHeaders = (new CsvImporter())->setCsvFile(__DIR__.'/files/guitars.csv')->toConfiguredHeaders($item);
+
+        $this->assertEquals('title', $attachedToHeaders['title']);
+        $this->assertEquals(null, $attachedToHeaders['serial_number']);
+        $this->assertEquals(null, $attachedToHeaders['company']);
+        $this->assertFalse(isset($attachedToHeaders['some_field_1']));
+        $this->assertFalse(isset($attachedToHeaders['weird_one']));
     }
 }
