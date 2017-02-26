@@ -3,6 +3,8 @@
 namespace RGilyov\CsvImporter\Test;
 
 use Orchestra\Testbench\TestCase;
+use \RGilyov\CsvImporter\CsvImporterServiceProvider;
+use \Illuminate\Support\Facades\File;
 
 abstract class BaseTestCase extends TestCase
 {
@@ -19,7 +21,7 @@ abstract class BaseTestCase extends TestCase
     protected function getPackageProviders($app)
     {
         return [
-            \RGilyov\CsvImporter\CsvImporterServiceProvider::class,
+            CsvImporterServiceProvider::class,
         ];
     }
 
@@ -44,15 +46,10 @@ abstract class BaseTestCase extends TestCase
         ]);
     }
 
-    /**
-     * @return string
-     */
-    protected function setCacheDriver(){}
-
     public function tearDown()
     {
-        \Illuminate\Support\Facades\File::deleteDirectory($this->cachePath, true);
-        \Illuminate\Support\Facades\File::deleteDirectory($this->filesPath, true);
+        File::deleteDirectory($this->cachePath, true);
+        File::deleteDirectory($this->filesPath, true);
 
         parent::tearDown();
     }

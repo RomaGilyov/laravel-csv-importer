@@ -62,6 +62,8 @@ class SettersAndGettersTest extends BaseTestCase
 
         ////////////////////////////////////////////////////////////////
 
+        $this->assertNull((new CsvImporter())->toConfiguredHeaders($item));
+
         $attachedToHeaders = (new CsvImporter())->setCsvFile(__DIR__.'/files/guitars.csv')->toConfiguredHeaders($item);
 
         $this->assertEquals('title', $attachedToHeaders['title']);

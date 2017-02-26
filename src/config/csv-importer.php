@@ -41,7 +41,7 @@ return array(
      * `/` and `\` and `|` and `.` and `,` on `-` and will assume that
      * the given csv file has `Y-m-d` or `d-m-Y` date format
      */
-    'csv_date_format' => 'Y-m-d',
+    'csv_date_format' => null,
 
     'delimiter' => ',',
 

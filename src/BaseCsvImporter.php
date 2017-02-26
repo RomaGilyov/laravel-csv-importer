@@ -240,8 +240,12 @@ abstract class BaseCsvImporter
      */
     protected function getConfigProperty($property, $default, $cast = null)
     {
-        if (isset($this->baseConfig[$property]) && $this->baseConfig[$property]) {
-            return (is_string($cast)) ? $this->castField($this->baseConfig[$property], $cast) : $this->baseConfig[$property];
+        if (isset($this->config['config'][$property]) && ($value = $this->config['config'][$property])) {
+            return (is_string($cast)) ? $this->castField($value, $cast) : $value;
+        }
+        
+        if (isset($this->baseConfig[$property]) && ($value = $this->baseConfig[$property])) {
+            return (is_string($cast)) ? $this->castField($value, $cast) : $value;
         }
 
         return $default;
@@ -561,7 +565,7 @@ abstract class BaseCsvImporter
      */
     public function __call($name, $get = null)
     {
-        return (isset($get[0]) && is_string($get[0])) ? $this->__call($get[0], null) : $this->__get($name);
+        return (isset($get[0]) && is_string($get[0])) ? $this->__get($get[0]) : $this->__get($name);
     }
 
     /*
@@ -1012,6 +1016,7 @@ abstract class BaseCsvImporter
             case 'date':
                 return $this->toDate($value);
             case 'datetime':
+            case 'date_time':
                 return $this->toDateTime($value);
             case 'array':
                 return (array)$value;
@@ -1078,7 +1083,7 @@ abstract class BaseCsvImporter
      */
     protected function dummyCarbonDate()
     {
-        return Carbon::createFromFormat('yyyy-mm-dd', '0001-01-01');
+        return Carbon::createFromFormat('Y-m-d H:i:s', '0001-01-01 00:00:00');
     }
 
     /**

@@ -1,13 +1,13 @@
-serial_number,company,title
-1,ESP,Ltd MH-1000ET
-1,ESP,Ltd MH-1000ET
-2,Ibanez,TAM100 Tosin Abasi Signature
-3,Music Man,John Petrucci signature
-4,Mayones,Regius MM QM
-5,Strandberg,Boden 6 Custom
-6,Blackmachine,B6
-not_numeric,Jackson,Misha Mansoor Juggernaut HT6
-8,Skervesen,Raptor 7
-9,Daemoness,Cimmerian 7
-10,Mayones,Duvell 7 Elite
-11,Mayones,
+serial_number,company,title,email,date,date_time
+1,ESP,Ltd MH-1000ET,test@test.test,26-02-2017,2017-02-26 10:00:12
+1,ESP,Ltd MH-1000ET,test@test.test,7-02-26,2017-02-26 10:00t3
+2,Ibanez,TAM100 Tosin Abasi Signature,test@test.test,2017-02-26,2017-02-27 10:00
+3,Music Man,John Petrucci signature,test@test.test,2017-02-26,2017-02-27 10:00
+4,Mayones,Regius MM QM,test@test.test,2017-02-26,2017-02-27 10:00
+5,Strandberg,Boden 6 Custom,test@test.test,2017-02-26,2017-02-27 10:00
+6,Blackmachine,B6,test@test.test,2017-02-26,2017-02-27 10:00
+not_numeric,Jackson,Misha Mansoor Juggernaut HT6,test@test.test,2017-02-26,2017-02-27 10:00
+8,Skervesen,Raptor 7,invalid_email,2017-02-26,2017-02-27 10:00
+9,Daemoness,Cimmerian 7,test@test.test,2017-02-26,2017-02-27 10:00
+10,Mayones,Duvell 7 Elite,test@test.test,2017-02-26,2017-02-27 10:00
+11,Mayones,,test@test.test,2017-02-26,2017-02-27 10:00
