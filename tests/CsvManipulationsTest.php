@@ -16,7 +16,7 @@ class CsvManipulationsTest extends BaseTestCase
     {
         parent::setUp();
 
-        $this->importer = (new CsvImporter())->setFile(__DIR__.'/files/guitars.csv');
+        $this->importer = (new CsvImporter())->setCsvFile(__DIR__.'/files/guitars.csv');
     }
 
     /** @test */

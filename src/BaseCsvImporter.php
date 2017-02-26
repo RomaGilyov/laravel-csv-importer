@@ -454,7 +454,7 @@ abstract class BaseCsvImporter
      * @param string|\SplFileInfo $file
      * @return static
      */
-    public function setFile($file)
+    public function setCsvFile($file)
     {
         $this->csvFile = $file;
         $this->setReader();
@@ -557,11 +557,27 @@ abstract class BaseCsvImporter
 
     /**
      * @param $name
-     * @return null
+     * @return mixed
      */
     public function __get($name)
     {
+        if (strpos($name, 'get') !== false) {
+            $name = str_replace('get', '', $name);
+        }
+
+        $name = Str::camel($name);
+
         return (property_exists($this, $name)) ? $this->{$name} : null;
+    }
+
+    /**
+     * @param $name
+     * @param $get
+     * @return mixed
+     */
+    public function __call($name, $get = null)
+    {
+        return (isset($get[0]) && is_string($get[0])) ? $this->__call($get[0], null) : $this->__get($name);
     }
 
     /*

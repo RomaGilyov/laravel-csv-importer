@@ -21,12 +21,12 @@ class MutexFunctionality extends BaseTestCase
     {
         parent::setUp();
 
-        $this->importer = (new AsyncCsvImporter())->setFile(__DIR__.'/files/guitars.csv');
+        $this->importer = (new AsyncCsvImporter())->setCsvFile(__DIR__.'/files/guitars.csv');
 
         $this->importer->clearSession();
         $this->importer->flushAsyncInfo();
 
-        $this->dispatch(new TestImportJob());
+        $this->dispatch(new TestImportJob($this->cacheDriver));
 
         /*
          * We need to wait till queue start import, in the separated process
@@ -246,8 +246,10 @@ class MutexFunctionality extends BaseTestCase
      */
     protected function fuse($counter, $key)
     {
-        if ($counter > 10) {
-            throw new \Exception("Timeout error. Check your queue. Key: " . $key);
+        if ($counter > 25) {
+            throw new \PHPUnit_Framework_ExpectationFailedException(
+                "Timeout error. Check your queue. Key: '" . $key . "'. Cache driver: '" . $this->cacheDriver . "'."
+            );
         }
 
         sleep(1);
