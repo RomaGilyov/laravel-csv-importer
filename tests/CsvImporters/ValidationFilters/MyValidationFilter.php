@@ -7,6 +7,11 @@ use RGilyov\CsvImporter\BaseValidationFilter;
 class MyValidationFilter extends BaseValidationFilter
 {
     /**
+     * @var string
+     */
+    protected $name = 'bad_word_validation';
+
+    /**
      * @param array $csvItem
      * @return bool
      */

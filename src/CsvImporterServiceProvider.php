@@ -31,11 +31,13 @@ class CsvImporterServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/config/csv-importer.php', 'csv-importer');
 
-        $this->commands([
-            MakeCsvImporter::class,
-            MakeHeadersFilter::class,
-            MakeValidationFilter::class,
-            MakeCastFilter::class
-        ]);
+        if (method_exists($this, 'commands')) {
+            $this->commands([
+                MakeCsvImporter::class,
+                MakeHeadersFilter::class,
+                MakeValidationFilter::class,
+                MakeCastFilter::class
+            ]);
+        }
     }
 }

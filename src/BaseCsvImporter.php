@@ -739,13 +739,9 @@ abstract class BaseCsvImporter
             return null;
         }
 
-        $flip = array_map(function () {
-            return null;
-        }, array_flip($this->headers));
+        $headers = array_fill_keys($this->headers, null);
 
-        $common = array_intersect_key($data, $flip);
-
-        return array_merge($flip, $common);
+        return array_merge($headers, array_intersect_key($data, $headers));
     }
     /**
      * Extract fields which is were specified inside `mappings` array in the configurations, from the given csv line

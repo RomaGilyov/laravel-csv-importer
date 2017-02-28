@@ -29,7 +29,7 @@ class MutexFunctionality extends BaseTestCase
         $this->dispatch(new TestImportJob($this->cacheDriver));
 
         /*
-         * We need to wait till queue start import, in the separated process
+         * We need to wait till queue start import in the separated system process
          */
         $this->waitUntilStart();
     }
@@ -37,7 +37,7 @@ class MutexFunctionality extends BaseTestCase
     public function tearDown()
     {
         /*
-         * Make sure the import is finished, before next test
+         * Make sure the import is finished before next test
          */
         $this->checkImportFinalResponse();
 
