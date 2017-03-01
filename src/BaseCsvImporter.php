@@ -238,14 +238,14 @@ abstract class BaseCsvImporter
      * @param bool $cast
      * @return mixed
      */
-    protected function getConfigProperty($property, $default, $cast = null)
+    protected function getConfigProperty($property, $default = null, $cast = null)
     {
         if (isset($this->config['config'][$property]) && ($value = $this->config['config'][$property])) {
-            return (is_string($cast)) ? $this->castField($value, $cast) : $value;
+            return $this->castField($value, $cast);
         }
         
         if (isset($this->baseConfig[$property]) && ($value = $this->baseConfig[$property])) {
-            return (is_string($cast)) ? $this->castField($value, $cast) : $value;
+            return $this->castField($value, $cast);
         }
 
         return $default;
@@ -549,11 +549,7 @@ abstract class BaseCsvImporter
      */
     public function __get($name)
     {
-        if (strpos($name, 'get') !== false) {
-            $name = str_replace('get', '', $name);
-        }
-
-        $name = Str::camel($name);
+        $name = Str::camel(str_replace('get', '', $name));
 
         return (property_exists($this, $name)) ? $this->{$name} : null;
     }
@@ -890,34 +886,74 @@ abstract class BaseCsvImporter
     /**
      * @return void
      */
-    protected function setWriters()
+    private function setWriters()
     {
         if (isset($this->config['csv_files']) && is_array($this->config['csv_files'])) {
             $paths = [];
             foreach ($this->config['csv_files'] as $csvFileKeyName => $path) {
-                if (Storage::exists($path)) {
-                    $time = "_" . Carbon::now()->format('Y_M_D_\a\t_H_i') . "_";
-                    $path = (substr_count($path, '.') === 1) ? str_replace(".", $time.'.', $path) : ($path . $time);
-                }
+                $fullPath = $this->createFile($this->unifyPathIfExists($path));
 
-                Storage::put($path, '');
+                $this->csvWriters->put($csvFileKeyName, $this->makeWriter($fullPath));
 
-                $path = $this->concatenatePath(Storage::disk()->getDriver()->getAdapter()->getPathPrefix(), $path);
-
-                $writer = Writer::createFromPath($path)
-                    ->setDelimiter($this->delimiter)
-                    ->setEnclosure($this->enclosure)
-                    ->setEscape($this->escape)
-                    ->setNewline($this->newline)
-                    ->insertOne(implode($this->delimiter, $this->headers));
-
-                $this->csvWriters->put($csvFileKeyName, $writer);
-
-                $paths[$csvFileKeyName] = $path;
+                $paths[$csvFileKeyName] = $fullPath;
             }
 
             $this->cache->forever($this->importPathsKey, $paths);
         }
+    }
+
+    /**
+     * @param $path
+     * @return string
+     * @throws CsvImporterException
+     */
+    protected function createFile($path)
+    {
+        if (!Storage::put($path, '')) {
+            throw new CsvImporterException(
+                ['message' => 'Not able to create csv file. Path: ' . $this->fullPath($path)],
+                400
+            );
+        }
+
+        return $this->fullPath($path);
+    }
+
+    /**
+     * @param $path
+     * @return string
+     */
+    protected function fullPath($path)
+    {
+        return $this->concatenatePath(Storage::disk()->getDriver()->getAdapter()->getPathPrefix(), $path);
+    }
+
+    /**
+     * @param $path
+     * @return mixed|string
+     */
+    protected function unifyPathIfExists($path)
+    {
+        if (Storage::exists($path)) {
+            $time = "_" . Carbon::now()->format('Y_M_D_\a\t_H_i') . "_";
+            return (substr_count($path, '.') === 1) ? str_replace(".", $time.'.', $path) : ($path . $time);
+        }
+
+        return $path;
+    }
+
+    /**
+     * @param $path
+     * @return static
+     */
+    private function makeWriter($path)
+    {
+        return Writer::createFromPath($path)
+            ->setDelimiter($this->delimiter)
+            ->setEnclosure($this->enclosure)
+            ->setEscape($this->escape)
+            ->setNewline($this->newline)
+            ->insertOne(implode($this->delimiter, $this->headers));
     }
 
     /**
@@ -992,7 +1028,7 @@ abstract class BaseCsvImporter
      */
     protected function castField($value, $type)
     {
-        if (is_null($value)) {
+        if (is_null($value) || !is_string($type)) {
             return $value;
         }
 
