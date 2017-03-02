@@ -6,6 +6,7 @@ use Orchestra\Testbench\TestCase;
 use RGilyov\CsvImporter\ClosureHeadersFilter;
 use RGilyov\CsvImporter\ClosureValidationFilter;
 use RGilyov\CsvImporter\Exceptions\CsvImporterException;
+use RGilyov\CsvImporter\Exceptions\ImportValidationException;
 use RGilyov\CsvImporter\Test\CsvImporters\AsyncCsvImporter;
 use RGilyov\CsvImporter\Test\CsvImporters\CsvImporter;
 use RGilyov\CsvImporter\Test\CsvImporters\CustomValidationImporter;
@@ -118,8 +119,8 @@ class CustomFiltersTest extends BaseTestCase
     /** @test */
     public function it_validation_filter_does_not_exists()
     {
-        $this->expectException(CsvImporterException::class);
-        $this->expectExceptionMessage('{"message":"Method [validateBadWordValidation] does not exist."}');
+        $this->expectException(ImportValidationException::class);
+        $this->expectExceptionMessage("Method [validateBadWordValidation] does not exist.");
 
         $importer = (new CustomValidationImporter())->setCsvFile(__DIR__.'/files/bad_word.csv');
 

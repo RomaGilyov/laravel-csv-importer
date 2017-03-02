@@ -20,6 +20,7 @@ use NinjaMutex\Lock\MemcachedLock;
 use NinjaMutex\Lock\PredisRedisLock;
 use \Predis\Client as PredisClient;
 use NinjaMutex\Mutex;
+use RGilyov\CsvImporter\Exceptions\ImportValidationException;
 
 abstract class BaseCsvImporter
 {
@@ -295,7 +296,10 @@ abstract class BaseCsvImporter
      */
     protected function filterMutexLockKey()
     {
-        return Str::slug(($key = $this->setMutexLockKey()) ? $key : (string)($this), '_');
+        return Str::slug(
+            ($key = $this->getConfigProperty('mutex_lock_key', $this->setMutexLockKey())) ? $key : (string)($this),
+            '_'
+        );
     }
 
     /**
@@ -304,6 +308,36 @@ abstract class BaseCsvImporter
     protected function setMutexLockKey()
     {
         return static::class;
+    }
+
+    /**
+     * @return $this
+     */
+    public function resetMutexLockKey()
+    {
+        $this->importLockKey = $this->filterMutexLockKey();
+        $this->setKeys();
+
+        return $this;
+    }
+
+    /**
+     * You may change mutex key with concatenation,
+     * useful when you have multiple imports for one import class at the same time
+     *
+     * @param $concat
+     * @return static
+     */
+    public function concatMutexKey($concat)
+    {
+        $this->importLockKey = $this->importLockKey . '_' . $concat;
+
+        /*
+         * Important to reset all keys after concatenation due to all keys depends on `importLockKey`
+         */
+        $this->setKeys();
+
+        return $this;
     }
 
     /*
@@ -362,25 +396,6 @@ abstract class BaseCsvImporter
     protected function after()
     {
 
-    }
-
-    /**
-     * You may change mutex key with concatenation,
-     * useful when you have multiple imports for one import class at the same time
-     *
-     * @param $concat
-     * @return static
-     */
-    public function concatMutexKey($concat)
-    {
-        $this->importLockKey = $this->importLockKey . '_' . $concat;
-
-        /*
-         * Important to reset all keys after concatenation due to all keys depends on `importLockKey`
-         */
-        $this->setKeys();
-        
-        return $this;
     }
 
     /**
@@ -1173,14 +1188,14 @@ abstract class BaseCsvImporter
      * @param array $item
      * @param array $validationRules
      * @return mixed
-     * @throws CsvImporterException
+     * @throws ImportValidationException
      */
     protected function passes(array $item, array $validationRules)
     {
         try {
             return Validator::make($item, $validationRules)->passes();
         } catch (\BadMethodCallException $e) {
-            throw new CsvImporterException(['message' => $e->getMessage()], 400);
+            throw new ImportValidationException($e->getMessage(), 400);
         }
     }
 
