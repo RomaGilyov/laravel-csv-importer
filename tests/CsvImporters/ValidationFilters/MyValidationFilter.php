@@ -17,7 +17,7 @@ class MyValidationFilter extends BaseValidationFilter
      */
     public function filter(array $csvItem)
     {
-        if (strpos($csvItem['name'], 'some bad word') !== false) {
+        if (strpos($csvItem['title'], 'bad_word') !== false) {
             return false;
         }
 

@@ -750,7 +750,6 @@ abstract class BaseCsvImporter
         return ($this->configMappingsExists()) ? array_intersect_key($item, $this->config['mappings']) : [];
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Main functionality
@@ -1132,12 +1131,16 @@ abstract class BaseCsvImporter
      */
     protected function validateItem(array $item)
     {
+        if (!$this->executeValidationFilters($item)) {
+            return false;
+        }
+
         if ($this->configMappingsExists()) {
             $validationRules = [];
 
             foreach ($this->config['mappings'] as $field => $rules) {
                 if (isset($rules[self::VALIDATION]) && isset($item[$field])) {
-                    $validationRules[$field] = $rules[self::VALIDATION];
+                    $validationRules[$field] = $this->excludeCustomValidationFilters($rules[self::VALIDATION]);
                 }
             }
 
@@ -1146,19 +1149,40 @@ abstract class BaseCsvImporter
             }
         }
 
-        return $this->executeValidationFilters($item);
+        return true;
+    }
+
+    /**
+     * @param $filters
+     * @return array
+     */
+    protected function excludeCustomValidationFilters($filters)
+    {
+        $filters = (is_string($filters)) ? explode('|', $filters) : (array)$filters;
+
+        foreach ($filters as $key => $filter) {
+            if (static::validationFilterExists($filter)) {
+                unset($filters[$key]);
+            }
+        }
+
+        return $filters;
     }
 
     /**
      * @param array $item
      * @param array $validationRules
-     * @return bool
+     * @return mixed
+     * @throws CsvImporterException
      */
     protected function passes(array $item, array $validationRules)
     {
-        return Validator::make($item, $validationRules)->passes();
+        try {
+            return Validator::make($item, $validationRules)->passes();
+        } catch (\BadMethodCallException $e) {
+            throw new CsvImporterException(['message' => $e->getMessage()], 400);
+        }
     }
-    
 
     /**
      * @param array $item

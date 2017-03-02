@@ -109,11 +109,13 @@ class AsyncCsvImporter extends BaseCsvImporter
      */
     protected function before()
     {
-        Cache::forever(AsyncCsvImporter::$cacheStartedKey, true);
+        if ($this->asyncMode) {
+            Cache::forever(AsyncCsvImporter::$cacheStartedKey, true);
 
-        sleep(5);
+            sleep(5);
 
-        Cache::forever(AsyncCsvImporter::$cacheInitFinishedKey, true);
+            Cache::forever(AsyncCsvImporter::$cacheInitFinishedKey, true);   
+        }
     }
 
     /**
@@ -121,20 +123,21 @@ class AsyncCsvImporter extends BaseCsvImporter
      */
     protected function after()
     {
-        Cache::forever(AsyncCsvImporter::$cacheFinalStageStartedKey, true);
+        if ($this->asyncMode) {
+            Cache::forever(AsyncCsvImporter::$cacheFinalStageStartedKey, true);
+            
+            $this->setFinalDetails('Buzz me Mulatto');
 
+            sleep(5);
 
-        $this->setFinalDetails('Buzz me Mulatto');
+            Cache::forever(AsyncCsvImporter::$cacheCustomProgressBarKey, true);
 
-        sleep(5);
+            $this->initProgressBar('Custom progress bar', 5);
 
-        Cache::forever(AsyncCsvImporter::$cacheCustomProgressBarKey, true);
-
-        $this->initProgressBar('Custom progress bar', 5);
-
-        for ($i = 0; $i < 5; $i++) {
-            sleep(1);
-            $this->incrementProgress();
+            for ($i = 0; $i < 5; $i++) {
+                sleep(1);
+                $this->incrementProgress();
+            }   
         }
     }
 
@@ -143,7 +146,9 @@ class AsyncCsvImporter extends BaseCsvImporter
      */
     protected function onCancel()
     {
-        Cache::forever(AsyncCsvImporter::$cacheOnCancelKey, 'Hey there!');
+        if ($this->asyncMode) {
+            Cache::forever(AsyncCsvImporter::$cacheOnCancelKey, 'Hey there!');
+        }
     }
 
     /**

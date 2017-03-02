@@ -5,6 +5,7 @@ namespace RGilyov\CsvImporter\Test;
 use Orchestra\Testbench\TestCase;
 use \RGilyov\CsvImporter\CsvImporterServiceProvider;
 use \Illuminate\Support\Facades\File;
+use RGilyov\CsvImporter\Test\CsvImporters\CsvImporter;
 
 abstract class BaseTestCase extends TestCase
 {
@@ -52,5 +53,36 @@ abstract class BaseTestCase extends TestCase
         File::deleteDirectory($this->filesPath, true);
 
         parent::tearDown();
+    }
+
+    //////////////////////////////////////////////////////////
+
+    /**
+     * @param $path
+     * @return array
+     */
+    protected function getResultCsv($path)
+    {
+        $res = fopen($path, 'r');
+
+        $csvEntities = [];
+        while ($entity = fgetcsv($res, 1000)) {
+            $csvEntities[] = $entity;
+        }
+
+        return $csvEntities;
+    }
+
+    /**
+     * @param null $path
+     * @return array
+     */
+    protected function importCsv($path = null)
+    {
+        $importer = (new CsvImporter())->setCsvFile(($path) ? $path : __DIR__.'/files/guitars.csv');
+
+        $importer->run();
+
+        return $importer->finish();
     }
 }

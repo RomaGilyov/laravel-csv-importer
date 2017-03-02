@@ -62,34 +62,4 @@ class StandardFiltersTest extends BaseTestCase
         $this->assertEquals('0007-02-26', $entities[2][4]);
         $this->assertEquals('0001-01-01 00:00:00', $entities[2][5]);
     }
-
-    //////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @param $path
-     * @return array
-     */
-    protected function getResultCsv($path)
-    {
-        $res = fopen($path, 'r');
-
-        $csvEntities = [];
-        while ($entity = fgetcsv($res, 1000)) {
-            $csvEntities[] = $entity;
-        }
-
-        return $csvEntities;
-    }
-
-    /**
-     * @return array
-     */
-    protected function importCsv()
-    {
-        $importer = (new CsvImporter())->setCsvFile(__DIR__.'/files/guitars.csv');
-
-        $importer->run();
-
-        return $importer->finish();
-    }
 }
