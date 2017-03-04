@@ -9,9 +9,11 @@ include:
     - php: 5.6
       env: dependencies=lowest
 
+services:
+  - redis-server
+  - memcached
+
 before_script:
-    - redis-cli info
-    - sudo apt-get install php5-memcached
     - composer self-update
     - composer install --prefer-source --no-interaction --dev
     - if [ "$dependencies" = "lowest" ]; then composer update --prefer-lowest --prefer-stable -n; fi;
@@ -21,7 +23,3 @@ before_script:
 
 script:
   - vendor/bin/phpunit
-
-services:
-  - redis-server
-  - memcached

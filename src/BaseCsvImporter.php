@@ -305,10 +305,7 @@ abstract class BaseCsvImporter
     /**
      * @return mixed
      */
-    protected function setMutexLockKey()
-    {
-        return static::class;
-    }
+    protected function setMutexLockKey(){}
 
     /**
      * @return $this
