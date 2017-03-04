@@ -1,0 +1,22 @@
+language: php
+
+php:
+    - 5.6
+    - 7.0
+    - 7.1
+
+include:
+    - php: 5.6
+      env: dependencies=lowest
+
+before_script:
+    - composer self-update
+    - composer install --prefer-source --no-interaction --dev
+    - if [ "$dependencies" = "lowest" ]; then composer update --prefer-lowest --prefer-stable -n; fi;
+    - php tests/Queue/run-queue-app-with-file-cache-driver.php &
+    - php tests/Queue/run-queue-app-with-redis-cache-driver.php &
+    - php tests/Queue/run-queue-app-with-memcached-cache-driver.php &
+
+script:
+  - vendor/bin/phpunit
+
