@@ -167,6 +167,7 @@ class MutexFunctionality extends BaseTestCase
     protected function checkImportFinalResponse($counter = 0)
     {
         if ($info = Cache::get(AsyncCsvImporter::$cacheInfoKey)) {
+            usleep(200); // reduce possibility of race condition
             return $info;
         }
 
@@ -183,6 +184,7 @@ class MutexFunctionality extends BaseTestCase
     protected function waitUntilStart($counter = 0)
     {
         if (Cache::get(AsyncCsvImporter::$cacheStartedKey)) {
+            usleep(200); // reduce possibility of race condition
             return true;
         }
 
@@ -199,6 +201,7 @@ class MutexFunctionality extends BaseTestCase
     protected function waitUntilCustomProgressBar($counter = 0)
     {
         if (Cache::get(AsyncCsvImporter::$cacheCustomProgressBarKey)) {
+            usleep(200); // reduce possibility of race condition
             return true;
         }
 
@@ -215,6 +218,7 @@ class MutexFunctionality extends BaseTestCase
     protected function waitUntilEndOfInitialization($counter = 0)
     {
         if (Cache::get(AsyncCsvImporter::$cacheInitFinishedKey)) {
+            usleep(200); // reduce possibility of race condition
             return true;
         }
 
@@ -231,6 +235,7 @@ class MutexFunctionality extends BaseTestCase
     protected function waitUntilFinalStage($counter = 0)
     {
         if (Cache::get(AsyncCsvImporter::$cacheFinalStageStartedKey)) {
+            usleep(200); // reduce possibility of race condition
             return true;
         }
 

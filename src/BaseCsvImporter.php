@@ -45,12 +45,12 @@ abstract class BaseCsvImporter
      *
      * @var string
      */
-    const REQUIRED = 'required';
+    const HEADERS = 'headers';
 
     /**
      * @var array
      */
-    protected static $requiredFilters = [];
+    protected static $headersFilters = [];
 
     /**
      * Cast given value either to native php type either to some custom format
@@ -185,7 +185,7 @@ abstract class BaseCsvImporter
     /**
      * @var string
      */
-    protected $importLockKey;
+    protected $mutexLockKey;
 
     /**
      * @var string
@@ -208,7 +208,7 @@ abstract class BaseCsvImporter
     public function __construct()
     {
         $this->baseConfig     = $this->getBaseConfig();
-        $this->importLockKey  = $this->filterMutexLockKey();
+        $this->mutexLockKey  = $this->filterMutexLockKey();
 
         $this->mutexLockTime  = $this->getConfigProperty('mutex_lock_time', 300, 'integer');
         $this->inputEncoding  = $this->getConfigProperty('input_encoding', 'UTF-8', 'string');
@@ -280,14 +280,14 @@ abstract class BaseCsvImporter
      */
     protected function setKeys()
     {
-        $this->importPathsKey               = $this->importLockKey . '_paths';
-        $this->csvCountCacheKey             = $this->importLockKey . '_quantity';
-        $this->progressCacheKey             = $this->importLockKey . '_processed';
-        $this->progressMessageKey           = $this->importLockKey . '_message';
-        $this->progressCancelKey            = $this->importLockKey . '_cancel';
-        $this->progressDetailsKey           = $this->importLockKey . '_details';
-        $this->progressFinalDetailsKey      = $this->importLockKey . '_final_details';
-        $this->progressFinishedKey          = $this->importLockKey . '_finished';
+        $this->importPathsKey               = $this->mutexLockKey . '_paths';
+        $this->csvCountCacheKey             = $this->mutexLockKey . '_quantity';
+        $this->progressCacheKey             = $this->mutexLockKey . '_processed';
+        $this->progressMessageKey           = $this->mutexLockKey . '_message';
+        $this->progressCancelKey            = $this->mutexLockKey . '_cancel';
+        $this->progressDetailsKey           = $this->mutexLockKey . '_details';
+        $this->progressFinalDetailsKey      = $this->mutexLockKey . '_final_details';
+        $this->progressFinishedKey          = $this->mutexLockKey . '_finished';
         $this->setMutex();
     }
 
@@ -315,7 +315,7 @@ abstract class BaseCsvImporter
      */
     public function resetMutexLockKey()
     {
-        $this->importLockKey = $this->filterMutexLockKey();
+        $this->mutexLockKey = $this->filterMutexLockKey();
         $this->setKeys();
 
         return $this;
@@ -330,10 +330,10 @@ abstract class BaseCsvImporter
      */
     public function concatMutexKey($concat)
     {
-        $this->importLockKey = $this->importLockKey . '_' . $concat;
+        $this->mutexLockKey = $this->mutexLockKey . '_' . $concat;
 
         /*
-         * Important to reset all keys after concatenation due to all keys depends on `importLockKey`
+         * Important to reset all keys after concatenation due to all keys depends on `mutexLockKey`
          */
         $this->setKeys();
 
@@ -1223,7 +1223,7 @@ abstract class BaseCsvImporter
     {
         foreach ($this->getRequiredHeaders() as $field) {
             if (array_search($field, $this->headers) === false) {
-                $this->setError('Required fields not found:', 'The "' . $field . '" field is required');
+                $this->setError('Required headers not found:', 'The "' . $field . '" header is required');
             }
         }
 
@@ -1235,7 +1235,7 @@ abstract class BaseCsvImporter
      */
     protected function executeHeadersFilters()
     {
-        foreach (static::getRequiredFilters() as $filter) {
+        foreach (static::getHeadersFilters() as $filter) {
             if ($filter instanceof BaseHeadersFilter) {
                 $result = $filter->executeFilter($this->headers);
                 if ($result->error) {
@@ -1249,9 +1249,9 @@ abstract class BaseCsvImporter
      * @parameters BaseHeaderFilter
      * @return array
      */
-    public static function addRequiredFilters()
+    public static function addHeadersFilters()
     {
-        return static::addFilters(self::REQUIRED, func_get_args());
+        return static::addFilters(self::HEADERS, func_get_args());
     }
 
     /**
@@ -1277,9 +1277,9 @@ abstract class BaseCsvImporter
      * @param null $name
      * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureHeadersFilter
      */
-    public static function addRequiredFilter($filter, $name = null)
+    public static function addHeadersFilter($filter, $name = null)
     {
-        return static::addFilter(self::REQUIRED, $filter, $name);
+        return static::addFilter(self::HEADERS, $filter, $name);
     }
 
     /**
@@ -1305,9 +1305,9 @@ abstract class BaseCsvImporter
     /**
      * @return array
      */
-    public static function getRequiredFilters()
+    public static function getHeadersFilters()
     {
-        return static::getFilters(self::REQUIRED);
+        return static::getFilters(self::HEADERS);
     }
 
     /**
@@ -1339,9 +1339,9 @@ abstract class BaseCsvImporter
      * @param $name
      * @return mixed
      */
-    public static function getRequiredFilter($name)
+    public static function getHeadersFilter($name)
     {
-        return static::getFilter(self::REQUIRED, $name);
+        return static::getFilter(self::HEADERS, $name);
     }
 
     /**
@@ -1375,9 +1375,9 @@ abstract class BaseCsvImporter
     /**
      * @return array
      */
-    public static function flushRequiredFilters()
+    public static function flushHeadersFilters()
     {
-        return static::flushFilters(self::REQUIRED);
+        return static::flushFilters(self::HEADERS);
     }
 
     /**
@@ -1409,9 +1409,9 @@ abstract class BaseCsvImporter
      * @param $name
      * @return bool
      */
-    public static function requiredFilterExists($name)
+    public static function headersFilterExists($name)
     {
-        return static::filterExists(self::REQUIRED, $name);
+        return static::filterExists(self::HEADERS, $name);
     }
     
     /**
@@ -1471,8 +1471,8 @@ abstract class BaseCsvImporter
         $resolved = false;
 
         switch ($type) {
-            case self::REQUIRED:
-                $resolved = (static::isClosure($filter)) ? new ClosureHeadersFilter($filter) : static::checkRequiredFilter($filter);
+            case self::HEADERS:
+                $resolved = (static::isClosure($filter)) ? new ClosureHeadersFilter($filter) : static::checkHeadersFilter($filter);
                 break;
             case self::VALIDATION:
                 $resolved = (static::isClosure($filter)) ? new ClosureValidationFilter($filter) : static::checkValidationFilter($filter);
@@ -1521,7 +1521,7 @@ abstract class BaseCsvImporter
      * @param $filter
      * @return bool
      */
-    public static function checkRequiredFilter($filter)
+    public static function checkHeadersFilter($filter)
     {
         return ($filter instanceof BaseHeadersFilter) ? $filter : false;
     }
@@ -1597,7 +1597,7 @@ abstract class BaseCsvImporter
 
         if ($this->configMappingsExists()) {
             foreach ($this->config['mappings'] as $field => $rules) {
-                if (array_search(self::REQUIRED, $rules) !== false) {
+                if (array_search('required', $rules) !== false) {
                     $fieldsWithRules[] = $field;
                 }
             }
@@ -1629,8 +1629,11 @@ abstract class BaseCsvImporter
         $cacheStore = $this->cache->getStore();
 
         if ($cacheStore instanceof RedisStore) {
-            $client = (($client = $cacheStore->connection()) instanceof PredisClient) ? $client : $client->client(null);
-            return $this->initMutex(new PredisRedisLock($client));
+            return $this->initMutex(
+                new PredisRedisLock(
+                    (($client = $cacheStore->connection()) instanceof PredisClient) ? $client : $client->client(null)
+                )
+            );
         }
 
         if ($cacheStore instanceof MemcachedStore) {
@@ -1653,7 +1656,7 @@ abstract class BaseCsvImporter
      */
     protected function initMutex($driver)
     {
-        return $this->mutex = new Mutex($this->importLockKey, $driver);
+        return $this->mutex = new Mutex($this->mutexLockKey, $driver);
     }
 
     /**
