@@ -9,9 +9,9 @@ use RGilyov\CsvImporter\Test\CsvImporters\CsvImporter;
 
 abstract class BaseTestCase extends TestCase
 {
-    protected $cachePath = __DIR__ . DIRECTORY_SEPARATOR .'files' . DIRECTORY_SEPARATOR . 'cache';
+    public static $cachePath = __DIR__ . DIRECTORY_SEPARATOR .'files' . DIRECTORY_SEPARATOR . 'cache';
 
-    protected $filesPath = __DIR__ . DIRECTORY_SEPARATOR .'files' . DIRECTORY_SEPARATOR . 'import';
+    public static $filesPath = __DIR__ . DIRECTORY_SEPARATOR .'files' . DIRECTORY_SEPARATOR . 'import';
 
     protected $cacheDriver = 'file';
 
@@ -38,19 +38,19 @@ abstract class BaseTestCase extends TestCase
         $app['config']->set('queue.default', 'redis');
         $app['config']->set('cache.stores.file', [
             'driver' => 'file',
-            'path'   => $this->cachePath,
+            'path'   => static::$cachePath,
         ]);
         $app['config']->set('filesystems.default', 'local');
         $app['config']->set('filesystems.disks.local', [
             'driver' => 'local',
-            'root'   => $this->filesPath,
+            'root'   => static::$filesPath,
         ]);
     }
 
     public function tearDown()
     {
-        File::deleteDirectory($this->cachePath, true);
-        File::deleteDirectory($this->filesPath, true);
+        File::deleteDirectory(static::$cachePath, true);
+        File::deleteDirectory(static::$filesPath, true);
 
         parent::tearDown();
     }
