@@ -14,6 +14,14 @@ class AppSetUp extends BaseTestCase
     {
         $this->cacheDriver = $driver ?: 'file';
 
+        if (!is_dir(static::$cachePath)) {
+            mkdir(static::$cachePath);
+        }
+
+        if (!is_dir(static::$filesPath)) {
+            mkdir(static::$filesPath);
+        }
+        
         parent::setUp();
     }
 }

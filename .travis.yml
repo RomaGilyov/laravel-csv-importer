@@ -13,7 +13,9 @@ before_script:
     - echo "extension = memcached.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
     - echo "extension = redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
     - composer install
-    - php tests/Queue/run.php
+    - php tests/Queue/run-queue-app-with-file-cache-driver.php &
+    - php tests/Queue/run-queue-app-with-redis-cache-driver.php &
+    - php tests/Queue/run-queue-app-with-memcached-cache-driver.php &
 
 script:
   - vendor/bin/phpunit
