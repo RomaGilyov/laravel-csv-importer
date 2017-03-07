@@ -4,14 +4,11 @@ namespace RGilyov\CsvImporter\Test;
 
 use Orchestra\Testbench\TestCase;
 use Illuminate\Support\Facades\Cache;
-use \Illuminate\Foundation\Bus\DispatchesJobs;
 use \RGilyov\CsvImporter\Test\Jobs\TestImportJob;
 use RGilyov\CsvImporter\Test\CsvImporters\AsyncCsvImporter;
 
 class MutexFunctionality extends BaseTestCase
 {
-    use DispatchesJobs;
-
     /**
      * @var AsyncCsvImporter
      */
@@ -26,20 +23,29 @@ class MutexFunctionality extends BaseTestCase
         $this->importer->clearSession();
         $this->importer->flushAsyncInfo();
 
-        $this->dispatch(new TestImportJob($this->cacheDriver));
+        if ($this->runTests()) {
+            dispatch(new TestImportJob($this->cacheDriver));
 
-        /*
-         * We need to wait till queue start import in the separated system process
-         */
-        $this->waitUntilStart();
+            /*
+             * We need to wait till queue start import in the separated system process
+             */
+            $this->waitUntilStart();
+        }
+    }
+
+    protected function runTests()
+    {
+        return function_exists('dispatch');
     }
 
     public function tearDown()
     {
-        /*
-         * Make sure the import is finished before next test
-         */
-        $this->checkImportFinalResponse();
+        if ($this->runTests()) {
+            /*
+             * Make sure the import is finished before next test
+             */
+            $this->checkImportFinalResponse();
+        }
 
         parent::tearDown();
     }
@@ -47,6 +53,10 @@ class MutexFunctionality extends BaseTestCase
     /** @test */
     public function it_can_import_and_lock_csv()
     {
+        if (!$this->runTests()) {
+            return;
+        }
+
         $initProgress         = $this->importer->getProgress();
 
         $this->waitUntilEndOfInitialization();
@@ -127,6 +137,10 @@ class MutexFunctionality extends BaseTestCase
     /** @test */
     public function it_can_cancel_import_process()
     {
+        if (!$this->runTests()) {
+            return;
+        }
+
         $this->importer->cancel();
 
         $finishedMessage = $this->checkImportFinalResponse();
@@ -138,6 +152,10 @@ class MutexFunctionality extends BaseTestCase
     /** @test */
     public function it_can_concatenate_import_lock_key()
     {
+        if (!$this->runTests()) {
+            return;
+        }
+
         $finishedMessage  = $this->importer->concatMutexKey('unrelated_guitars')->run();
         $finalInformation = $this->importer->finish();
 

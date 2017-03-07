@@ -1,9 +1,9 @@
 {
     "name": "rgilyov/laravel-csv-importer",
-    "description": "Easy and reliable way to import your csv files with laravel",
+    "description": "Easy and reliable way to import, parse, validate and transform your csv files with laravel",
     "type": "library",
     "license": "MIT",
-    "keywords": ["csv", "import", "laravel", "parse"],
+    "keywords": ["csv", "import", "laravel", "parse", "validate", "transform"],
     "authors": [
         {
             "name": "Roman Gilyov",
