@@ -208,7 +208,7 @@ abstract class BaseCsvImporter
     public function __construct()
     {
         $this->baseConfig     = $this->getBaseConfig();
-        $this->mutexLockKey  = $this->filterMutexLockKey();
+        $this->mutexLockKey   = $this->filterMutexLockKey();
 
         $this->mutexLockTime  = $this->getConfigProperty('mutex_lock_time', 300, 'integer');
         $this->inputEncoding  = $this->getConfigProperty('input_encoding', 'UTF-8', 'string');
@@ -296,16 +296,8 @@ abstract class BaseCsvImporter
      */
     protected function filterMutexLockKey()
     {
-        return Str::slug(
-            ($key = $this->getConfigProperty('mutex_lock_key', $this->setMutexLockKey())) ? $key : (string)($this),
-            '_'
-        );
+        return Str::slug(($key = $this->getConfigProperty('mutex_lock_key')) ? $key : (string)($this), '_');
     }
-
-    /**
-     * @return mixed
-     */
-    protected function setMutexLockKey(){}
 
     /**
      * @return $this
@@ -415,7 +407,7 @@ abstract class BaseCsvImporter
      */
     public function progressBarDetails()
     {
-        return null;
+
     }
 
     /**
@@ -994,7 +986,7 @@ abstract class BaseCsvImporter
      * @return array
      * @throws CsvImporterException
      */
-    protected function castFields(array $item)
+    public function castFields(array $item)
     {
         if ($this->configMappingsExists()) {
             foreach ($this->config['mappings'] as $field => $rules) {
@@ -1021,7 +1013,7 @@ abstract class BaseCsvImporter
      * @param $cast
      * @return mixed
      */
-    protected function performCastOnValue($value, $cast)
+    public function performCastOnValue($value, $cast)
     {
         if ($filter = static::getCastFilter($cast)) {
             return $filter->filter($value);
@@ -1141,7 +1133,7 @@ abstract class BaseCsvImporter
      * @param array $item
      * @return bool
      */
-    protected function validateItem(array $item)
+    public function validateItem(array $item)
     {
         if (!$this->executeValidationFilters($item)) {
             return false;
@@ -1168,7 +1160,7 @@ abstract class BaseCsvImporter
      * @param $filters
      * @return array
      */
-    protected function excludeCustomValidationFilters($filters)
+    public function excludeCustomValidationFilters($filters)
     {
         $filters = (is_string($filters)) ? explode('|', $filters) : (array)$filters;
 
@@ -1200,7 +1192,7 @@ abstract class BaseCsvImporter
      * @param array $item
      * @return bool
      */
-    protected function executeValidationFilters(array $item)
+    public function executeValidationFilters(array $item)
     {
         foreach (static::getValidationFilters() as $filter) {
             if ($filter instanceof BaseValidationFilter) {
@@ -1327,7 +1319,7 @@ abstract class BaseCsvImporter
      * @param $type
      * @return mixed
      */
-    protected static function getFilters($type)
+    public static function getFilters($type)
     {
         return Arr::get(static::${$type . 'Filters'}, static::class, []);
     }
@@ -1364,7 +1356,7 @@ abstract class BaseCsvImporter
      * @param $name
      * @return null
      */
-    protected static function getFilter($type, $name)
+    public static function getFilter($type, $name)
     {
         return (static::filterExists($type, $name)) ? static::${$type . 'Filters'}[static::class][$name] : null;
     }
@@ -1397,7 +1389,7 @@ abstract class BaseCsvImporter
      * @param $type
      * @return array
      */
-    protected static function flushFilters($type)
+    public static function flushFilters($type)
     {
         return Arr::set(static::${$type . 'Filters'}, static::class, []);
     }
@@ -1434,7 +1426,7 @@ abstract class BaseCsvImporter
      * @param $name
      * @return bool
      */
-    protected static function filterExists($type, $name)
+    public static function filterExists($type, $name)
     {
         return isset(static::${$type . 'Filters'}[static::class][$name]);
     }
@@ -1444,14 +1436,10 @@ abstract class BaseCsvImporter
      * @param array $filters
      * @return mixed
      */
-    private static function addFilters($type, array $filters)
+    public static function addFilters($type, array $filters)
     {
         foreach ($filters as $filter) {
-            if (is_array($filter)) {
-                call_user_func_array([static::class, "add" . ucfirst($type) . "Filters"], $filter);
-            } else {
-                static::addFilter($type, $filter);
-            }
+            (is_array($filter)) ? static::addFilters($type, $filter) : static::addFilter($type, $filter);
         }
 
         return static::${$type . 'Filters'}[static::class];
@@ -1463,24 +1451,29 @@ abstract class BaseCsvImporter
      * @param null $name
      * @return bool|ClosureCastFilter|ClosureValidationFilter|ClosureHeadersFilter
      */
-    private static function addFilter($type, $filter, $name = null)
+    public static function addFilter($type, $filter, $name = null)
     {
-        $resolved = false;
-
-        switch ($type) {
-            case self::HEADERS:
-                $resolved = (static::isClosure($filter)) ? new ClosureHeadersFilter($filter) : static::checkHeadersFilter($filter);
-                break;
-            case self::VALIDATION:
-                $resolved = (static::isClosure($filter)) ? new ClosureValidationFilter($filter) : static::checkValidationFilter($filter);
-                break;
-            case self::CAST:
-                $resolved = (static::isClosure($filter)) ? new ClosureCastFilter($filter) : static::checkCastFilter($filter);
-                break;
+        if ($resolved = static::resolveFilter($type, $filter)) {
+            return static::${$type . 'Filters'}[static::class][static::filterName($type, $resolved, $name)] = $resolved;
         }
 
-        if ($resolved) {
-            return static::${$type . 'Filters'}[static::class][static::filterName($type, $resolved, $name)] = $resolved;
+        return false;
+    }
+
+    /**
+     * @param $type
+     * @param $filter
+     * @return bool|ClosureCastFilter|ClosureHeadersFilter|ClosureValidationFilter
+     */
+    public static function resolveFilter($type, $filter)
+    {
+        switch ($type) {
+            case self::HEADERS:
+                return (static::isClosure($filter)) ? new ClosureHeadersFilter($filter) : static::checkHeadersFilter($filter);
+            case self::VALIDATION:
+                return (static::isClosure($filter)) ? new ClosureValidationFilter($filter) : static::checkValidationFilter($filter);
+            case self::CAST:
+                return (static::isClosure($filter)) ? new ClosureCastFilter($filter) : static::checkCastFilter($filter);
         }
 
         return false;
@@ -1626,11 +1619,7 @@ abstract class BaseCsvImporter
         $cacheStore = $this->cache->getStore();
 
         if ($cacheStore instanceof RedisStore) {
-            return $this->initMutex(
-                new PredisRedisLock(
-                    (($client = $cacheStore->connection()) instanceof PredisClient) ? $client : $client->client(null)
-                )
-            );
+            return $this->initMutex(new PredisRedisLock((($client = $cacheStore->connection()) instanceof PredisClient) ? $client : $client->client(null)));
         }
 
         if ($cacheStore instanceof MemcachedStore) {
@@ -1791,7 +1780,7 @@ abstract class BaseCsvImporter
 
         $data = [
             'data' => [
-                "message"  => $this->getConfigProperty('final', '', 'string')
+                "message" => $this->getConfigProperty('final', '', 'string')
             ],
             'meta' => ["finished" => true, 'init' => false, 'running' => false]
         ];

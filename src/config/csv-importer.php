@@ -1,6 +1,6 @@
 <?php
 
-return array(
+return [
 
     /*
     |--------------------------------------------------------------------------
@@ -70,4 +70,4 @@ return array(
     'finished'         => 'Almost done, please click to the `finish` button to proceed',
     'final'            => 'The import process successfully finished!'
 
-);
+];
