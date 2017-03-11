@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace RGilyov\CsvImporter\Test\Queue;
 
@@ -10,9 +10,9 @@ class AppSetUp extends BaseTestCase
     /*
      * Make setUp method public
      */
-    public function setUp($driver = null)
+    public function setUp($driver)
     {
-        $this->cacheDriver = $driver ?: 'file';
+        $this->cacheDriver = $driver;
 
         if (!is_dir(static::$cachePath)) {
             mkdir(static::$cachePath);
