@@ -4,7 +4,7 @@ Flexible and reliable way to import, parse, validate and transform your csv file
 ## Installation ##
 
 ```php
-composer rgilyov/laravel-csv-importer 1.0.0
+composer require rgilyov/laravel-csv-importer 1.0.0
 
 // after installation you may publish default configuration file
 php artisan vendor:publish --tag=config
@@ -82,7 +82,6 @@ or the `php artisan make:csv-importer MyImporter` console command can be used, a
 
 There are 3 main methods:
 
-```
 1. `csvConfigurations` which returns configurations for that type of csv, configurations has 3 parts:
     a) `'mappings'`: you may specify fields which you expect the given csv has and attach rules to each field, there are
        3 types of rules(filters) which you can specify:
@@ -102,7 +101,6 @@ There are 3 main methods:
 
 2. `handle`: will be executed for csv lines which passed validation
 3. `invalid`: will be executed for csv lines which didn't pass validation
-```
 
 Let's finally import a csv:
 
