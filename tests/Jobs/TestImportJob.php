@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace RGilyov\CsvImporter\Test\Jobs;
 
