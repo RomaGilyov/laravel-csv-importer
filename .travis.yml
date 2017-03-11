@@ -30,8 +30,6 @@ services:
   - redis-server
 
 before_script:
-    - echo "extension = memcached.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-    - echo "extension = redis.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
     - if [ -z "$dependencies" ]; then composer install; fi;
     - if [ "$dependencies" = "lowest" ]; then composer update --prefer-lowest -n; fi;
     - if [ "$dependencies" = "highest" ]; then composer update -n; fi;
