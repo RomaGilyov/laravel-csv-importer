@@ -1751,7 +1751,7 @@ abstract class BaseCsvImporter
             ];
         } else {
             $data = [
-                'data' => ["message"  => $progress->message],
+                'data' => ["message"  => $progress->message ?: $this->getConfigProperty('progress', '', 'string')],
                 'meta' => [
                     'processed'  => ( int )$progress->processed,
                     'remains'    => ( int )$progress->quantity - $progress->processed,

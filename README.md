@@ -34,7 +34,8 @@ or the `php artisan make:csv-importer MyImporter` console command can be used, a
     class MyImporter extends BaseCsvImporter
     {
         /**
-         *  Specify mappings and rules for the csv importer, we also may create csv files when we can write csv entities
+         *  Specify mappings and rules for the csv importer,
+         *  we also may create csv files when we can write csv entities
          *
          * @return array
          */
@@ -79,8 +80,9 @@ or the `php artisan make:csv-importer MyImporter` console command can be used, a
     }
 ```
 
-There are 3 methods:
+There are 3 main methods:
 
+```
 1. `csvConfigurations` which returns configurations for that type of csv, configurations has 3 parts:
     a) `'mappings'`: you may specify fields which you expect the given csv has and attach rules to each field, there are
        3 types of rules(filters) which you can specify:
@@ -97,3 +99,62 @@ There are 3 methods:
     b) `'csv_files'`: files specified inside the key will be created, you can write csv lines inside each file,
        with `$this->insertTo('csv_file_name', $item);` method, for example you can separate invalid csv lines from valid
     c) `'config'`: you may overwrite global `config/csv-importer.php` configurations hear for the given csv importer
+
+2. `handle`: will be executed for csv lines which passed validation
+3. `invalid`: will be executed for csv lines which didn't pass validation
+```
+
+Let's finally import a csv:
+
+```php
+    $importer = new \App\CsvImporters\MyImporter();
+    $importer->setCsvFile('my_huge_csv_with_100k_lines.csv')
+    $importer->run();
+
+    // we will have progress information here due to the import process already started above
+    $importer->run();
+```
+
+After the import had started you won't be able to start another import until the first one will be finished.
+
+During the import though you may want to know progress of the running process:
+
+```php
+    $progress = $importer->getProgress();
+
+    /*
+        [
+            'data' => ["message"  => 'The import process is running'],
+            'meta' => [
+                'processed'  => 25000,
+                'remains'    => 75000,
+                'percentage' => 25,
+                'finished'   => false,
+                'init'       => false,
+                'running'    => true
+            ]
+        ]
+    */
+```
+
+And after progress bar will have key `finished => true` inside `meta` data you will need to finish your csv import:
+
+```php
+    $finishDetails = $importer->finish();
+
+    /*
+        [
+            [
+                'data' => [
+                    "message" => 'The import process successfully finished.'
+                ],
+                'meta' => ["finished" => true, 'init' => false, 'running' => false],
+                'csv_files' => [
+                    'valid_entities.csv',
+                    'invalid_entities.csv'
+                ]
+            ]
+        ]
+    */
+```
+
