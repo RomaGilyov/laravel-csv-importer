@@ -10,10 +10,8 @@ class AppSetUp extends BaseTestCase
     /*
      * Make setUp method public
      */
-    public function setUp($driver)
+    public function setUp()
     {
-        $this->cacheDriver = $driver;
-
         if (!is_dir(static::$cachePath)) {
             mkdir(static::$cachePath);
         }
@@ -24,4 +22,16 @@ class AppSetUp extends BaseTestCase
         
         parent::setUp();
     }
+
+    /**
+     * @param $driver
+     * @return $this
+     */
+    public function setCacheDriver($driver)
+    {
+        $this->cacheDriver = $driver;
+
+        return $this;
+    }
+
 }

@@ -4,8 +4,10 @@ Flexible and reliable way to import, parse, validate and transform your csv file
 ## Installation ##
 
 ```php
-composer rgilyov/laravel-csv-importer
+composer rgilyov/laravel-csv-importer 1.0.0
 ```
+
+Works with laravel 5 and above, hhvm are supported.
 
 ## Requirements ##
 
@@ -15,7 +17,11 @@ laravel application should have `file`, `redis` or `memcached` cache driver set 
 
 ## Basic usage ##
 
-To create new csv importer a class should extends `RGilyov\CsvImporter\BaseCsvImporter` abstract class
+To create new csv importer, a class should extends `RGilyov\CsvImporter\BaseCsvImporter` abstract class
 or the `php artisan make:csv-importer MyImporter` console command can be used, after execution new importer with name
-`MyImporter` will occurred
+`MyImporter` will be placed inside `app/CsvImporters/` directory.
+
+```php
+composer rgilyov/laravel-csv-importer
+```
 
