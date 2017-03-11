@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__.'/../../vendor/autoload.php';
+include __DIR__.'/../../vendor/autoload.php';
 
 (new \RGilyov\CsvImporter\Test\Queue\AppSetUp())->setCacheDriver('redis')->setUp();
 

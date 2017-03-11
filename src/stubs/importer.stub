@@ -7,7 +7,7 @@ use RGilyov\CsvImporter\BaseCsvImporter;
 class DummyClass extends BaseCsvImporter
 {
     /**
-     *  Specify mappings and rules for our csv, we also may create csv files when we can write csv entities
+     *  Specify mappings and rules for the csv importer, we also may create csv files when we can write csv entities
      *
      * @return array
      */
@@ -26,7 +26,7 @@ class DummyClass extends BaseCsvImporter
     }
 
     /**
-     *  Will be executed for a csv line if it passes validation
+     *  Will be executed for a csv line if it passed validation
      *
      * @param $item
      * @throws \RGilyov\CsvImporter\Exceptions\CsvImporterException
