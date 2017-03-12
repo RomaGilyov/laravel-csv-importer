@@ -17,7 +17,7 @@ class MyValidationFilter extends BaseValidationFilter
      */
     public function filter($value)
     {
-        if (strpos($value['title'], 'bad_word') !== false) {
+        if (strpos($value, 'bad_word') !== false) {
             return false;
         }
 

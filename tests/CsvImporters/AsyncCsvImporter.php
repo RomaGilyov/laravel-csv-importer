@@ -100,10 +100,6 @@ class AsyncCsvImporter extends BaseCsvImporter
      */
     protected function invalid($item)
     {
-        if ($this->asyncMode) {
-            sleep(1);
-        }
-
         $this->insertTo('invalid_entities', $item);
     }
 

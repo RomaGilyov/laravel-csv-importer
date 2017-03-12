@@ -15,9 +15,9 @@ class CustomValidationImporter extends BaseCsvImporter
     {
         return [
             'mappings' => [
-                'company'       => ['validation' => ['string', 'bad_word_validation']],
+                'company'       => ['validation' => ['string']],
                 'serial_number' => ['required', 'validation' => ['numeric'], 'cast' => 'string'],
-                'title'         => ['validation' => ['required'], 'cast' => 'string']
+                'title'         => ['validation' => ['required', 'bad_word_validation'], 'cast' => 'string']
             ],
             'csv_files' => [
                 'valid_entities'   => '/valid_entities.csv',
