@@ -4,7 +4,7 @@ Flexible and reliable way to import, parse, validate and transform your csv file
 ## Installation ##
 
 ```php
-composer require rgilyov/laravel-csv-importer 1.0.0
+composer require rgilyov/laravel-csv-importer
 
 // after installation you may publish default configuration file
 php artisan vendor:publish --tag=config
@@ -810,6 +810,6 @@ chapters:
     }
 ```
 
-## The best to register your custom filters ##
+## The best way to register your custom filters ##
 
 I think the best way to register custom filters is to use a service provider: https://laravel.com/docs/5.4/providers
