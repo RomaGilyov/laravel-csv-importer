@@ -1,4 +1,5 @@
 /vendor
 composer.lock
 /tests/files/import/*
+/tests/files/cache/*
 .idea
