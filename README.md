@@ -5,8 +5,18 @@ Flexible and reliable way to import, parse, validate and transform your csv file
 
 ```php
 composer require rgilyov/laravel-csv-importer
+```
 
-// after installation you may publish default configuration file
+Register \RGilyov\CsvImporter\CsvImporterServiceProvider inside `config/app.php`
+```php
+    'providers' => [
+        //...
+        \RGilyov\CsvImporter\CsvImporterServiceProvider::class,
+    ];
+```
+
+After installation you may publish default configuration file
+```
 php artisan vendor:publish --tag=config
 ```
 
