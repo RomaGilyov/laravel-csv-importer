@@ -12,12 +12,12 @@ class DummyClass extends BaseValidationFilter
     protected $name = 'bad_word_validation';
 
     /**
-     * @param array $csvItem
+     * @param mixed $value
      * @return bool
      */
-    public function filter(array $csvItem)
+    public function filter($value)
     {
-        if (strpos($csvItem['name'], 'some bad word') !== false) {
+        if (strpos($value, 'some bad word') !== false) {
             return false;
         }
 

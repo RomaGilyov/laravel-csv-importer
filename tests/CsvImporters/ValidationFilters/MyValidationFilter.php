@@ -12,12 +12,12 @@ class MyValidationFilter extends BaseValidationFilter
     protected $name = 'bad_word_validation';
 
     /**
-     * @param array $csvItem
+     * @param mixed $value
      * @return bool
      */
-    public function filter(array $csvItem)
+    public function filter($value)
     {
-        if (strpos($csvItem['title'], 'bad_word') !== false) {
+        if (strpos($value['title'], 'bad_word') !== false) {
             return false;
         }
 

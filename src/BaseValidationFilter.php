@@ -5,8 +5,15 @@ abstract class BaseValidationFilter
     use NameableTrait;
 
     /**
-     * @param array $csvItem
+     * No need to attach the filter to any fields, since it will receive full csv array line if true
+     *
+     * @var bool
+     */
+    public $global = false;
+
+    /**
+     * @param mixed $value
      * @return bool
      */
-    abstract public function filter(array $csvItem);
+    abstract public function filter($value);
 }

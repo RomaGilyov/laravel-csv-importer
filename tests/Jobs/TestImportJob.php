@@ -36,8 +36,6 @@ class TestImportJob extends Job implements ShouldQueue
     {
         if (config('cache.default') != $this->cacheDriver) {
             dispatch(new TestImportJob($this->cacheDriver));
-//            echo 'driver: ' . config('cache.default') . PHP_EOL;
-//            echo 'test_driver: ' . $this->cacheDriver . PHP_EOL;
             return;
         }
 

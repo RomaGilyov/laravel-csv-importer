@@ -263,12 +263,12 @@ abstract class BaseCsvImporter
         ignore_user_abort(true);
 
         /*
-         * Make sure we have enough memory for the import
+         * Make sure the application have enough memory for the import
          */
         ini_set('memory_limit', $this->getConfigProperty('memory_limit', 128, 'integer') . 'M');
 
         /*
-         * Make sure the script will run as long as we set mutex lock time
+         * Make sure the script will run as long as mutex locked
          */
         ini_set('max_execution_time', $this->mutexLockTime * 60);
     }
@@ -433,7 +433,7 @@ abstract class BaseCsvImporter
      */
     protected function onCancel()
     {
-
+        
     }
 
     /*
@@ -670,7 +670,7 @@ abstract class BaseCsvImporter
         }
 
         /*
-         * We need to get data before mutex unlocked and session cleared
+         * Get data before mutex unlocked and session cleared
          */
         $data = $this->finalProgressDetails();
 
@@ -733,18 +733,21 @@ abstract class BaseCsvImporter
      * @param array $data
      * @return array
      */
-    public function toConfiguredHeaders(array $data)
+    public function toCsvHeaders(array $data)
     {
         if (!$this->exists()) {
             return null;
         }
 
-        $headers = array_fill_keys($this->headers, null);
+        $csvData = [];
+        foreach ($this->headers as $value) {
+            $csvData[$value] = (isset($data[$value])) ? $data[$value] : '';
+        }
 
-        return array_merge($headers, array_intersect_key($data, $headers));
+        return $csvData;
     }
     /**
-     * Extract fields which is were specified inside `mappings` array in the configurations, from the given csv line
+     * Extract fields which was specified inside `mappings` array in the configurations, from the given csv line
      *
      * @param array $item
      * @return array
@@ -1135,17 +1138,27 @@ abstract class BaseCsvImporter
      */
     public function validateItem(array $item)
     {
-        if (!$this->executeValidationFilters($item)) {
+        if (!$this->executeGlobalValidationFilters($item)) {
             return false;
         }
 
         if ($this->configMappingsExists()) {
-            $validationRules = [];
+            $validationRules       = [];
+            $customValidationRules = [];
 
             foreach ($this->config['mappings'] as $field => $rules) {
                 if (isset($rules[self::VALIDATION]) && isset($item[$field])) {
-                    $validationRules[$field] = $this->excludeCustomValidationFilters($rules[self::VALIDATION]);
+                    $rules = $this->separateValidationFilters($rules[self::VALIDATION]);
+                    $validationRules[$field] = $rules['standard'];
+
+                    if (!empty($rules['custom'])) {
+                        $customValidationRules[] = ['filters' => $rules['custom'], 'value' => $item[$field]];
+                    }
                 }
+            }
+
+            if (!empty($customValidationRules) && !$this->performCustomValidation($customValidationRules)) {
+                return false;
             }
 
             if (!empty($validationRules) && !$this->passes($item, $validationRules)) {
@@ -1157,20 +1170,42 @@ abstract class BaseCsvImporter
     }
 
     /**
+     * @param array $customValidationRules
+     * @return bool
+     */
+    protected function performCustomValidation(array $customValidationRules)
+    {
+        foreach ($customValidationRules as $couple) {
+            foreach ($couple['filters'] as $filterName) {
+                $filter = static::getFilter(self::VALIDATION, $filterName);
+                if ($filter instanceof BaseValidationFilter && !$filter->global) {
+                    if (!$filter->filter($couple['value'])) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @param $filters
      * @return array
      */
-    public function excludeCustomValidationFilters($filters)
+    public function separateValidationFilters($filters)
     {
-        $filters = (is_string($filters)) ? explode('|', $filters) : (array)$filters;
+        $filters                 = (is_string($filters)) ? explode('|', $filters) : (array)$filters;
+        $customValidationFilters = [];
 
         foreach ($filters as $key => $filter) {
             if (static::validationFilterExists($filter)) {
+                $customValidationFilters[] = $filter;
                 unset($filters[$key]);
             }
         }
 
-        return $filters;
+        return ['standard' => $filters, 'custom' => $customValidationFilters];
     }
 
     /**
@@ -1192,10 +1227,10 @@ abstract class BaseCsvImporter
      * @param array $item
      * @return bool
      */
-    public function executeValidationFilters(array $item)
+    public function executeGlobalValidationFilters(array $item)
     {
         foreach (static::getValidationFilters() as $filter) {
-            if ($filter instanceof BaseValidationFilter) {
+            if ($filter instanceof BaseValidationFilter && $filter->global) {
                 if (!$filter->filter($item)) {
                     return false;
                 }
@@ -1359,6 +1394,48 @@ abstract class BaseCsvImporter
     public static function getFilter($type, $name)
     {
         return (static::filterExists($type, $name)) ? static::${$type . 'Filters'}[static::class][$name] : null;
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public static function unsetHeadersFilter($name)
+    {
+        return static::getFilter(self::HEADERS, $name);
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public static function unsetValidationFilter($name)
+    {
+        return static::getFilter(self::VALIDATION, $name);
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     */
+    public static function unsetCastFilter($name)
+    {
+        return static::getFilter(self::CAST, $name);
+    }
+
+    /**
+     * @param $type
+     * @param $name
+     * @return null
+     */
+    public static function unsetFilter($type, $name)
+    {
+        if (static::filterExists($type, $name)) {
+            Arr::set(static::${$type . 'Filters'}[static::class], $name, null);
+            return true;
+        }
+
+        return false;
     }
 
     /**

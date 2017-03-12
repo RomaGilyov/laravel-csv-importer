@@ -10,7 +10,8 @@ class SettersAndGettersTest extends BaseTestCase
     /** @test */
     public function setters_and_getters()
     {
-        $importer = (new CsvImporter())->setCsvDateFormat('y-m-d')
+        $importer = (new CsvImporter())
+            ->setCsvDateFormat('y-m-d')
             ->setDelimiter('d')
             ->setEnclosure('e')
             ->setEscape("x")

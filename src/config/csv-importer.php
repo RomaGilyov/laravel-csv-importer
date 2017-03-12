@@ -4,7 +4,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Main csv import configuration
+    | Main csv import configurations
     |-------------------------------------------------------------------------- 
     |
     | `mutex_lock_time` - how long script will be executed and how long
@@ -23,6 +23,11 @@ return [
     'mutex_lock_time' => 300,
     
     'memory_limit' => 128,
+    
+    /*
+     * An import class's short name (without namespace) by default
+     */
+    'mutex_lock_key' => null,
 
     /*
      * Encoding of given csv file

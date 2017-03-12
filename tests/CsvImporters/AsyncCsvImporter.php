@@ -86,7 +86,6 @@ class AsyncCsvImporter extends BaseCsvImporter
     {
         if ($this->asyncMode) {
             sleep(1);
-//            echo "I'm running" . PHP_EOL;
         }
 
         $this->insertTo('valid_entities', $item);
@@ -101,6 +100,10 @@ class AsyncCsvImporter extends BaseCsvImporter
      */
     protected function invalid($item)
     {
+        if ($this->asyncMode) {
+            sleep(1);
+        }
+
         $this->insertTo('invalid_entities', $item);
     }
 

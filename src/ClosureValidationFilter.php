@@ -8,6 +8,11 @@ class ClosureValidationFilter extends BaseValidationFilter
     protected $closure;
 
     /**
+     * @var bool
+     */
+    public $global = true;
+
+    /**
      * @var string
      */
     protected $name = 'filter';
@@ -22,11 +27,11 @@ class ClosureValidationFilter extends BaseValidationFilter
     }
 
     /**
-     * @param array $csvItem
+     * @param array $value
      * @return bool
      */
-    public function filter(array $csvItem)
+    public function filter($value)
     {
-        return $this->closure->__invoke($csvItem);
+        return $this->closure->__invoke($value);
     }
 }
