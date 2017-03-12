@@ -130,8 +130,8 @@ During the import though you may want to know progress of the running process:
         [
             'data' => ["message"  => 'The import process is running'],
             'meta' => [
-                'processed'  => 25000,
-                'remains'    => 75000,
+                'processed'  => 250000,
+                'remains'    => 750000,
                 'percentage' => 25,
                 'finished'   => false,
                 'init'       => false,
@@ -418,14 +418,14 @@ There are 3 layers of configurations:
 
 Sounds awful, better just show how it works:
 
-Suppose we have csv file with this structure:
+Suppose we have a csv file with this structure:
 
 ```
 name,some_weird_header
 John,some_weird_data
 ```
 
-And we make import where define `mappings`, in this case we interested only in `name` field(header):
+And we make an import class and define `mappings`, in this case we interested only in `name` field(header):
 
 ```php
     class GuitarsCsvImporter extends BaseCsvImporter
@@ -465,8 +465,8 @@ And we make import where define `mappings`, in this case we interested only in `
             /*
                 Assume we need to do some manipulations with the $item
                 array and then write it to the `valid_entities.csv`
-                we need to make sure that data inside formatted array are match headers inside the csv,
-                we can do it with this `toCsvHeaders($item)` method:
+                we need to make sure that data inside formatted array are
+                match headers inside the csv, we can do it with this `toCsvHeaders($item)` method:
             */
 
             // will return ['name' => 'John', 'some_weird_header' => null]
@@ -810,6 +810,6 @@ chapters:
     }
 ```
 
-## Better way to register filters ##
+## The best to register your custom filters ##
 
 I think the best way to register custom filters is to use a service provider: https://laravel.com/docs/5.4/providers
