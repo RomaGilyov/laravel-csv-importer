@@ -1716,7 +1716,7 @@ abstract class BaseCsvImporter
      */
     protected function setMutex()
     {
-        $cacheStore = $this->cache->getStore()();
+        $cacheStore = $this->cache->getStore();
 
         if ($cacheStore instanceof RedisStore) {
             return $this->initMutex(
