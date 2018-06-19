@@ -897,7 +897,10 @@ abstract class BaseCsvImporter
             ->setEscape($this->escape)
             ->setNewline($this->newline);
 
-        $this->headers = array_map('strtolower', $this->csvReader->fetchOne());
+        $this->headers = array_map(function ($value)
+        {
+            return strtolower(preg_replace('/[[:cntrl:]]/', '', $value));
+        }, $this->csvReader->fetchOne());
     }
 
     /**
