@@ -3,7 +3,7 @@
 namespace RGilyov\CsvImporter;
 
 use Illuminate\Cache\CacheManager;
-use Illuminate\Contracts\Cache\Store;
+use Illuminate\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -24,6 +24,10 @@ use \Predis\Client as PredisClient;
 use NinjaMutex\Mutex;
 use RGilyov\CsvImporter\Exceptions\ImportValidationException;
 
+/**
+ * Class BaseCsvImporter
+ * @package RGilyov\CsvImporter
+ */
 abstract class BaseCsvImporter
 {
     use CsvImporterConfigurationTrait, NameableTrait;
@@ -335,7 +339,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * @return Store
+     * @return Repository
      */
     protected function getCacheDriver()
     {
