@@ -7,6 +7,10 @@ return [
     | Main csv import configurations
     |-------------------------------------------------------------------------- 
     |
+    | `cache_driver` - keeps all progress and final information, it also allows
+    |   the mutex functionality to work, there are only 3 cache drivers supported:
+    |   redis, file and memcached
+    |
     | `mutex_lock_time` - how long script will be executed and how long
     |   the import process will be locked, another words if we will import
     |   list of electric guitars we won't be able to run another import of electric
@@ -19,6 +23,8 @@ return [
     | `encoding` - which encoding we have, UTF-8 by default  
     |
     */
+
+    'cache_driver' => env('CACHE_DRIVER', 'file'),
 
     'mutex_lock_time' => 300,
     

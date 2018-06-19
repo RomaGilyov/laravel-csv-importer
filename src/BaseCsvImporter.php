@@ -2,6 +2,8 @@
 
 namespace RGilyov\CsvImporter;
 
+use Illuminate\Cache\CacheManager;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -204,6 +206,7 @@ abstract class BaseCsvImporter
 
     /**
      * BaseCsvImporter constructor.
+     * @throws CsvImporterException
      */
     public function __construct()
     {
@@ -222,7 +225,7 @@ abstract class BaseCsvImporter
 
         $this->config         = $this->csvConfigurations();
         $this->csvWriters     = collect([]);
-        $this->cache          = app()['cache.store'];
+        $this->cache          = $this->getCacheDriver();
 
         $this->setKeys();
     }
@@ -276,7 +279,7 @@ abstract class BaseCsvImporter
     /**
      * Always reset keys after mutes key concatenation or key changes
      *
-     * @return void
+     * @throws CsvImporterException
      */
     protected function setKeys()
     {
@@ -301,6 +304,7 @@ abstract class BaseCsvImporter
 
     /**
      * @return $this
+     * @throws CsvImporterException
      */
     public function resetMutexLockKey()
     {
@@ -315,7 +319,8 @@ abstract class BaseCsvImporter
      * useful when you have multiple imports for one import class at the same time
      *
      * @param $concat
-     * @return static
+     * @return $this
+     * @throws CsvImporterException
      */
     public function concatMutexKey($concat)
     {
@@ -327,6 +332,16 @@ abstract class BaseCsvImporter
         $this->setKeys();
 
         return $this;
+    }
+
+    /**
+     * @return Store
+     */
+    protected function getCacheDriver()
+    {
+        $cacheDriver = $this->getConfigProperty('mutex_cache_driver', 'file', 'string');
+
+        return (new CacheManager(app()))->driver($cacheDriver);
     }
 
     /*
@@ -593,7 +608,7 @@ abstract class BaseCsvImporter
 
     /**
      * @param string $property
-     * @return Collection
+     * @return Collection|bool
      */
     public function distinct($property)
     {
@@ -641,7 +656,8 @@ abstract class BaseCsvImporter
     /**
      * Run import
      *
-     * @return array
+     * @return array|bool
+     * @throws CsvImporterException
      */
     public function run()
     {
@@ -764,7 +780,8 @@ abstract class BaseCsvImporter
     */
 
     /**
-     * @return array
+     * @return array|bool
+     * @throws CsvImporterException
      */
     private function tryStart()
     {
@@ -787,7 +804,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * @return void
+     * @throws CsvImporterException
      */
     private function initialize()
     {
@@ -812,7 +829,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * @return void
+     * @throws CsvImporterException
      */
     private function finalStage()
     {
@@ -890,7 +907,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * @return void
+     * @throws CsvImporterException
      */
     private function setWriters()
     {
@@ -950,7 +967,7 @@ abstract class BaseCsvImporter
 
     /**
      * @param $path
-     * @return static
+     * @return Writer
      */
     private function makeWriter($path)
     {
@@ -987,7 +1004,6 @@ abstract class BaseCsvImporter
     /**
      * @param array $item
      * @return array
-     * @throws CsvImporterException
      */
     public function castFields(array $item)
     {
@@ -1135,6 +1151,7 @@ abstract class BaseCsvImporter
     /**
      * @param array $item
      * @return bool
+     * @throws ImportValidationException
      */
     public function validateItem(array $item)
     {
@@ -1241,7 +1258,7 @@ abstract class BaseCsvImporter
     }
 
     /**
-     * @throws CsvImporterException
+     * @return void
      */
     protected function validateHeaders()
     {
@@ -1468,7 +1485,9 @@ abstract class BaseCsvImporter
      */
     public static function flushFilters($type)
     {
-        return Arr::set(static::${$type . 'Filters'}, static::class, []);
+        $filters = static::${$type . 'Filters'};
+
+        return Arr::set($filters, static::class, []);
     }
 
     /**
@@ -1586,7 +1605,7 @@ abstract class BaseCsvImporter
 
     /**
      * @param $filter
-     * @return bool
+     * @return bool|BaseHeadersFilter
      */
     public static function checkHeadersFilter($filter)
     {
@@ -1595,7 +1614,7 @@ abstract class BaseCsvImporter
 
     /**
      * @param $filter
-     * @return bool
+     * @return bool|BaseValidationFilter
      */
     public static function checkValidationFilter($filter)
     {
@@ -1604,7 +1623,7 @@ abstract class BaseCsvImporter
 
     /**
      * @param $filter
-     * @return bool
+     * @return bool|BaseCastFilter
      */
     public static function checkCastFilter($filter)
     {
@@ -1693,10 +1712,16 @@ abstract class BaseCsvImporter
      */
     protected function setMutex()
     {
-        $cacheStore = $this->cache->getStore();
+        $cacheStore = $this->cache->getStore()();
 
         if ($cacheStore instanceof RedisStore) {
-            return $this->initMutex(new PredisRedisLock((($client = $cacheStore->connection()) instanceof PredisClient) ? $client : $client->client(null)));
+            return $this->initMutex(
+                new PredisRedisLock(
+                      (($client = $cacheStore->connection()) instanceof PredisClient)
+                            ? $client
+                            : $client->client(null)
+                )
+            );
         }
 
         if ($cacheStore instanceof MemcachedStore) {
@@ -1849,7 +1874,6 @@ abstract class BaseCsvImporter
 
     /**
      * @return array
-     * @throws CsvImporterException
      */
     private function finalProgressDetails()
     {
