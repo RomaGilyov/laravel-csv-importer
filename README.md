@@ -773,7 +773,7 @@ file with basic set up inside `app/CsvImporters/CastFilters/` folder:
 
     namespace App\CsvImporters\CastFilters;
 
-    use RGilyov\CsvImporter\BaseHeadersFilter;
+    use RGilyov\CsvImporter\BaseCastFilter;
 
     class MyCastFilter extends BaseCastFilter
     {
