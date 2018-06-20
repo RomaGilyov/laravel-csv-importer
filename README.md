@@ -288,6 +288,10 @@ There are 3 layers of configurations:
         | Main csv import configurations
         |--------------------------------------------------------------------------
         |
+        | `cache_driver` - keeps all progress and final information, it also allows
+        |   the mutex functionality to work, there are only 3 cache drivers supported:
+        |   redis, file and memcached
+        |
         | `mutex_lock_time` - how long script will be executed and how long
         |   the import process will be locked, another words if we will import
         |   list of electric guitars we won't be able to run another import of electric
@@ -300,7 +304,8 @@ There are 3 layers of configurations:
         | `encoding` - which encoding we have, UTF-8 by default
         |
         */
-
+        'cache_driver' => env('CACHE_DRIVER', 'file'),
+        
         'mutex_lock_time' => 300,
 
         'memory_limit' => 128,
@@ -768,7 +773,7 @@ file with basic set up inside `app/CsvImporters/CastFilters/` folder:
 
     namespace App\CsvImporters\CastFilters;
 
-    use RGilyov\CsvImporter\BaseHeadersFilter;
+    use RGilyov\CsvImporter\BaseCastFilter;
 
     class MyCastFilter extends BaseCastFilter
     {

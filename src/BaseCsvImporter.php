@@ -899,7 +899,7 @@ abstract class BaseCsvImporter
 
         $this->headers = array_map(function ($value)
         {
-            return strtolower(preg_replace('/[[:cntrl:]]/', '', $value));
+            return strtolower(preg_replace('/[[:^print:]]/', '', $value));
         }, $this->csvReader->fetchOne());
     }
 
