@@ -1492,9 +1492,9 @@ abstract class BaseCsvImporter
      */
     public static function flushFilters($type)
     {
-        $filters = static::${$type . 'Filters'};
+        static::${$type . 'Filters'}[static::class] = [];
 
-        return Arr::set($filters, static::class, []);
+        return static::${$type . 'Filters'}[static::class];
     }
 
     /**
